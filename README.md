@@ -136,7 +136,7 @@ Supports only one metric.
 
 #### Example:
 
-Query a metric for values of a tag since 1 day ago:
+Query a metric for values of all its tags since 1 day ago:
 
 ```
 results = c.query(metric='metric_name',aggr='sum',tags={'tagn':'*'},start='1d-ago')
