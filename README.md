@@ -1,4 +1,4 @@
-otsdb-client
+otsdb_client
 ============
 
 Python client to OpenTSDB
@@ -9,7 +9,7 @@ Installation
 ===
 Clone this repo, then
 ```
-cd otsdb-client
+cd otsdb_client
 python setup.py install
 ```
 

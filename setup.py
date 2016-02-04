@@ -10,7 +10,7 @@ except ImportError:
     read_md = lambda f: open(f, 'r').read()
 
 if __name__ == '__main__':
-    project_name = "otsdb-client"
+    project_name = "otsdb_client"
     setup(
         name=project_name,
         version=__version__,
@@ -19,7 +19,7 @@ if __name__ == '__main__':
         description=("A Python client for OpenTSDB based in a simple socket for writing and fast urllib3 http client for reading"),
         license="GNU GPL",
         keywords="opentsdb, tsdb, time series",
-        url="http://github.com/venidera/otsdb-client",
+        url="http://github.com/venidera/otsdb_client",
         packages=find_packages(),
         long_description=read_md('README.md'),
         classifiers=[
