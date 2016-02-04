@@ -44,4 +44,4 @@ True
 
 License
 =======
-This packaged is released and distributed under the license GNU GPL Version 2, June 1991.
+This package is released and distributed under the license GNU GPL Version 2, June 1991.
