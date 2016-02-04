@@ -139,7 +139,7 @@ Supports only one metric.
 Query a metric for values of a tag since 1 day ago:
 
 ```
-c.query(metric='metric_name',aggr='sum',tags={'tagn':'*'},start='1d-ago')
+results = c.query(metric='metric_name',aggr='sum',tags={'tagn':'*'},start='1d-ago')
 ```
 
 License
