@@ -58,7 +58,7 @@ class Connection(object):
             for k,v in tags.iteritems():
                 tags_str += str(k) + '=' + str(v) + ' '
             cmd = 'put %s %d %4.2f %s\n' % (metric,ts,float(value),tags_str)
-            print 'cmd: '+cmd[:-1]
+            #print 'cmd: '+cmd[:-1]
             self.conn.send(cmd)
             print 'point written successfully'
             return True
@@ -89,9 +89,20 @@ class Connection(object):
             print 'No aggregators found'
             return []
 
-    def query(self, metric, aggr, tags=dict(), start='', end=None, nots=False,\
+    def query(self, metric, aggr='sum', tags=dict(), start='1h-ago', end=None, nots=False,\
         tsd=True, json=False,show_summary=False,union=False,chunked=False):
         # Support only one metric per query
+        # Arguments description:
+        # metric = the metric Name
+        # aggr = an aggregator
+        # tags = tags to the points that defined a timeserie
+        # start = the initial value for the time interval
+        # end = (Optional) the final value for the interval (default = now)
+        # nots = return only values and no timestamps
+        # tsd = return timestamps as datetime objects / other option will be a integer
+        # json = if True will return the exact response of the http request
+        # show_summary = Add information summary of the query
+        # union = return the points of the time series (Metric+Tags) in one list
         # chunked: will be implemented in future, to stream over urllib3
         # Example: /api/query?m=sum:test_post{test=*}&start=1d-ago
         # other options in query: &no_annotations=true&global_annotations=false&show_summary=true
