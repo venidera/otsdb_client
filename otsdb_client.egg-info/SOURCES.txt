@@ -1,10 +1,12 @@
 LICENSE
 MANIFEST.in
 README.md
+setup.cfg
 setup.py
 otsdb_client/__init__.py
 otsdb_client/client.py
 otsdb_client.egg-info/PKG-INFO
 otsdb_client.egg-info/SOURCES.txt
 otsdb_client.egg-info/dependency_links.txt
+otsdb_client.egg-info/requires.txt
 otsdb_client.egg-info/top_level.txt

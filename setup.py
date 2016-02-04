@@ -21,6 +21,9 @@ if __name__ == '__main__':
         keywords="opentsdb, tsdb, time series",
         url="http://github.com/venidera/otsdb_client",
         packages=find_packages(),
+        install_requires=[
+          'urllib3',
+         ],
         long_description=read_md('README.md'),
         classifiers=[
             "Development Status :: 5 - Production/Stable",
