@@ -1,9 +1,18 @@
 otsdb_client
 ============
 
-Python client to OpenTSDB
+A simple Python client to OpenTSDB.
+The writing method (put) uses a simple socket and the reading a http request made trough the urllib3.
 
+The current implementation will not use a worker, fancy multithread control or stream for chunked results. It's a start point to a good (hope) OpenTSDB client.
 
+This package as made and tested only with Python 2.7.
+
+# ToDo:
+
+* Check for limits and blocking impacts;
+* Implement worker or multithread;
+* Implement the reading with chunks.
 
 Installation
 ===
@@ -32,3 +41,7 @@ True
 >>> c.query(metric='test_put',aggr='sum',tags={'test':'*'},start='1h-ago',union=True)
 {'results': {'values': [2000.0], 'ts': [datetime.datetime(2016, 2, 4, 0, 28, 19)]}}
 ```
+
+License
+=======
+This packaged is released and distributed under the license GNU GPL Version 2, June 1991.
