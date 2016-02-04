@@ -1,0 +1,28 @@
+Metadata-Version: 1.0
+Name: otsdb-client
+Version: 0.0.1
+Summary: A simple Python client for OpenTSDB.
+Home-page: http://github.com/venidera/otsdb-client
+Author: Andre E. Toscano
+Author-email: andre@venidera.com
+License: GNU GPL
+Description: otsdb-client
+        ======
+
+        Python client to OpenTSDB
+
+        Installation
+        ===
+        Clone this repo, then
+        ```
+        cd otsdb-client
+        python setup.py install
+        ```
+
+Keywords: opentsdb,tsdb,time series
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: System Administrators
+Classifier: Operating System :: Unix
+Classifier: Topic :: Utilities
