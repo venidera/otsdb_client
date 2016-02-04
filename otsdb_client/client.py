@@ -69,6 +69,7 @@ class Connection(object):
     def _disconnect(self):
         self.conn.close()
         self.http = None
+        self.aggregators = None
 
     def __del__(self):
         self._disconnect()
