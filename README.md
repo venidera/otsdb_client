@@ -83,7 +83,7 @@ def put(self,metric,ts=None,value=0.0,tags=dict()):
     ...
 ```
 
-Better take a look at (http://opentsdb.net/docs/build/html/user_guide/writing.html)[OpenTSDB data model and naming schema.]
+Better take a look at [OpenTSDB data model and naming schema.](http://opentsdb.net/docs/build/html/user_guide/writing.html)
 
 #### Arguments:
 
@@ -123,9 +123,9 @@ Supports only one metric.
 
 #### Arguments:
 * metric (str) : the metric name;
-* aggr (str) : an aggregator (example: `sum`, (http://opentsdb.net/docs/build/html/api_http/aggregators.html)[take a look here]);
-* tags (dict) : tags to the points that defined a timeserie ((http://opentsdb.net/docs/build/html/user_guide/writing.html)[Naming schema]);
-* start (str) : starting time for the query ((http://opentsdb.net/docs/build/html/user_guide/query/index.html)[look here]);
+* aggr (str) : an aggregator (example: `sum`, [take a look here](http://opentsdb.net/docs/build/html/api_http/aggregators.html));
+* tags (dict) : tags to the points that defined a timeserie ([Naming schema](http://opentsdb.net/docs/build/html/user_guide/writing.html));
+* start (str) : starting time for the query ([look here](http://opentsdb.net/docs/build/html/user_guide/query/index.html));
 * end (str - Optional): a end time for the query (default = now);
 * nots (bool): it's NoTimeStamps in results, if is defined as `True`;
 * tsd (bool): return timestamps as datetime objects for `True`, and integer timestamps for `False`;
