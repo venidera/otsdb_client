@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: otsdb_client
-Version: 0.0.1
+Version: 0.0.2
 Summary: A simple Python client for OpenTSDB.
 Home-page: http://github.com/venidera/otsdb_client
 Author: Andre E. Toscano
