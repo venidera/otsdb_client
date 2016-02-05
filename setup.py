@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from otsdb_client import __version__
+__version__ = '0.0.2'
 
 try:
     from pypandoc import convert
@@ -21,9 +21,7 @@ if __name__ == '__main__':
         keywords="opentsdb, tsdb, time series",
         url="http://github.com/venidera/otsdb_client",
         packages=find_packages(),
-        install_requires=[
-          'urllib3',
-         ],
+        install_requires=['urllib3>=1.14'],
         long_description=read_md('README.md'),
         classifiers=[
             "Development Status :: 5 - Production/Stable",
