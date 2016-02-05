@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from potsdb import __version__
+from otsdb_client import __version__
 
 try:
     from pypandoc import convert
