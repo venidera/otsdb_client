@@ -34,13 +34,23 @@ class Connection(object):
         self.aggregators = self._get_aggr()
 
     def _isconnected(self):
+        # If no connection, connect
         if not self.conn or not self.http:
             self._connect()
-        if self.conn and self.http:
-            return True
-        else:
-            return False
-
+        # if there's a socket, check the connection
+        checksocket = False
+        checkhttp = False
+        if self.conn:
+            try:
+                self.conn.getpeername()
+                checksocket = True
+            except:
+                # no connection
+                pass
+        if self.http:
+            checkhttp = True
+        return (checksocket and checkhttp)
+        
     def put(self,metric,ts=None,value=0.0,tags=dict()):
         if not self._isconnected():
             print 'connection was lost'
