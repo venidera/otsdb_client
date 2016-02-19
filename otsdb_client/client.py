@@ -50,7 +50,7 @@ class Connection(object):
         if self.http:
             checkhttp = True
         return (checksocket and checkhttp)
-        
+
     def put(self,metric,ts=None,value=0.0,tags=dict()):
         if not self._isconnected():
             print 'connection was lost'
@@ -70,7 +70,7 @@ class Connection(object):
             cmd = 'put %s %d %4.2f %s\n' % (metric,ts,float(value),tags_str)
             #print 'cmd: '+cmd[:-1]
             self.conn.send(cmd)
-            print 'point written successfully'
+            #print 'point written successfully'
             return True
         except:
             print 'fail to put the point'
