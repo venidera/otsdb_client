@@ -73,7 +73,7 @@ class Connection(object):
             else:
                 return False
 
-    def put(self,metric,ts=None,values=[],tags=dict(),details=True):
+    def put(self,metric,ts=None,values=[],tags=dict(),details=True,verbose=False):
         rs = {'points':0,'success':0,'failed':0}
         if details:
             ldetails = list()
@@ -102,7 +102,8 @@ class Connection(object):
                         return
         if self.wctype == 'http':
             url = self.url() + '/api/put?summary=true&details=true'
-            print 'Putting data over http to url: %s' % (url)
+            if verbose:
+                print 'Putting data over http to url: %s' % (url)
             # separate to send 50 points per request
             pts = list()
             ptl = list()
@@ -140,7 +141,8 @@ class Connection(object):
                     rs['failed'] += len(ptset)
                     if details:
                         dt['result'] = 'FAIL'
-                print 'Request %d submitted with http response code %d and results %s' % (n+1,reqrs.status,reqrs.data)
+                if verbose:
+                    print 'Request %d submitted with http response code %d and results %s' % (n+1,reqrs.status,reqrs.data)
                 if details:
                     ldetails.append(dt)
         else:
