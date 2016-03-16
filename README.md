@@ -26,7 +26,7 @@ or
 $ pip install git+https://github.com/venidera/otsdb_client.git
 ```
 
-Usage
+Usage (Deprecated - will be updated soon ;) )
 ===
 Complete example of connect, put and read points from OpenTSDB:
 
