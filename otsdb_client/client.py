@@ -1,7 +1,7 @@
 from socket import socket,AF_INET,SOCK_STREAM
 from datetime import datetime
 from time import mktime
-from urllib3 import PoolManager
+from urllib3 import PoolManager,Retry,Timeout
 from json import loads,dumps
 
 class Connection(object):
@@ -36,8 +36,7 @@ class Connection(object):
         else:
             self.wctype = 'http'
             # Create the PoolManager for http connections
-            #self.http = PoolManager(10,retries=3,timeout=10.0)
-            self.http = PoolManager(10,timeout=10.0)
+            self.http = PoolManager(10,retries=Retry(total=20),timeout=Timeout(total=30.0))
             if self.http:
                 print 'HTTP client ready to access OpenTSDB server'
             self.aggregators = self._get_aggr()
