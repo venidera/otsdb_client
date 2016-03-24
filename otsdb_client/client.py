@@ -72,7 +72,7 @@ class Connection(object):
             else:
                 return False
 
-    def put(self,metric,ts=None,values=[],tags=dict(),details=True,verbose=False):
+    def put(self,metric,ts=None,values=[],tags=dict(),details=True,verbose=False,ptcl=10):
         rs = {'points':0,'success':0,'failed':0}
         if details:
             ldetails = list()
@@ -119,7 +119,7 @@ class Connection(object):
                             nts = int(nts)
                 ptl.append({'timestamp':nts,'metric':metric,'value':float(v),'tags':tags})
                 ptc += 1
-                if ptc == 50:
+                if ptc == ptcl:
                     ptc = 0
                     pts.append(list(ptl))
                     ptl = list()
