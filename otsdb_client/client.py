@@ -72,7 +72,7 @@ class Connection(object):
             else:
                 return False
 
-    def put(self,metric,ts=None,values=[],tags=dict(),details=True,verbose=False,ptcl=10):
+    def put(self,metric,ts=None,values=[],tags=dict(),details=True,verbose=False,ptcl=10,twait=0.3):
         rs = {'points':0,'success':0,'failed':0}
         if details:
             ldetails = list()
@@ -144,6 +144,7 @@ class Connection(object):
                     print 'Request %d submitted with http response code %d and results %s' % (n+1,reqrs.status,reqrs.data)
                 if details:
                     ldetails.append(dt)
+                sleep(twait)
         else:
             tags_str = ''
             for k,v in tags.iteritems():
