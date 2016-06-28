@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 try:
     from pypandoc import convert
@@ -14,14 +14,14 @@ if __name__ == '__main__':
     setup(
         name=project_name,
         version=__version__,
-        author="Andre E Toscano",
-        author_email="andre@venidera.com",
+        author="Rafael G Vieira, Andre E Toscano",
+        author_email="rafael@venidera.com, andre@venidera.com",
         description=("A Python client for OpenTSDB based in a simple socket for writing and fast urllib3 http client for reading"),
         license="GNU GPL",
         keywords="opentsdb, tsdb, time series",
         url="http://github.com/venidera/otsdb_client",
         packages=find_packages(),
-        install_requires=['urllib3>=1.14'],
+        install_requires=['urllib3>=1.14','grequests==0.3.0','numpy==1.11.0'],
         long_description=read_md('README.md'),
         classifiers=[
             "Development Status :: 5 - Production/Stable",
