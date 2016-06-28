@@ -18,7 +18,7 @@ import random
 import numpy as np
 from rest.client import Client
 
-class TestObj(Object):
+class Connection(Client):
     def __init__(self,server='localhost',port=4242):
         self.client = Client(server=server, port=port)
 
