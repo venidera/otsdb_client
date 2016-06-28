@@ -24,7 +24,6 @@ class Client():
         self.server = server
         self.port = port
 
-
     def get_endpoint(self, key):
         """ Selects the OTSDB required enpoint. """
         return {
@@ -38,39 +37,31 @@ class Client():
             'stats': '/api/stats',
         }.get(key)
 
-
     def get_url(self):
         """ Returns the domain of the OTSDB requested URL. """
         return 'http://' + self.server + ':' + str(self.port)
-
 
     def _make_request(self, endpoint, query=None, process=True):
         """ Performs HTTP GET requests """
         req = gr.get(self.get_url() + self.get_endpoint(endpoint), params=query)
         gr.map([req])
-
         return self.process_response(req.response) if process else req.response
-
 
     def filters(self):
         """ Lists the various filters loaded by the TSD """
         return self._make_request("filters")
 
-        
     def statistics(self):
         """Get info about what metrics are registered and with what stats."""
         return self._make_request("stats")
-
 
     def aggregators(self):
         """Used to get the list of default aggregation functions. """
         return self._make_request("aggr")
 
-
     def version(self):
         """Used to check OpenTSDB version. """
         return self._make_request("version")
-
 
     def suggest(self, t='metrics', q='', m=9999):
         """ Matches the string in the query on the first chars of the stored data.
@@ -78,20 +69,19 @@ class Client():
         Parameters
         ----------
         't' : string (default='metrics')
-            The type of data. Must be one of the following: metrics, tagk or tagv.  
+            The type of data. Must be one of the following: metrics, tagk or tagv.
 
         'q' : string, optional (default='')
             A string to match on for the given type.
 
         'm' : int, optional (default=9999)
             The maximum number of suggested results. Must be greater than 0.
-  
+
         """
         query = {'type': t, 'q': q, 'max': m}
         return self._make_request("suggest", query)
 
-
-    def put(self, metric=None, timestamp=[], values=[], tags=dict(), 
+    def put(self, metric=None, timestamp=[], values=[], tags=dict(),
         details=True, verbose=True, ptcl=10, att=5):
         """ Allows for storing data in OpenTSDB over HTTP and Telnet.
 
@@ -111,7 +101,7 @@ class Client():
 
         'details' : boolean, optional (default=True)
             Whether or not to return detailed information
-  
+
         'verbose' : boolean, optional (default=False)
             Enable verbose output.
 
@@ -121,7 +111,6 @@ class Client():
         'att' : int, required (default=5)
             Number of HTTP request attempts
         """
-
         assert isinstance(metric, str), 'Field <metric> must be a string.'
         assert isinstance(values, list), 'Field <values> must be a list.'
         assert isinstance(timestamp, list), 'Field <timestamps> must be a list.'
@@ -144,7 +133,7 @@ class Client():
                 nts = current_milli_time()
             else:
                 nts = timestamp[n]
-                
+
                 if isinstance(nts, datetime):
                     nts = int(time.mktime(nts.timetuple()))
                 elif not isinstance(nts, int):
@@ -152,15 +141,15 @@ class Client():
 
             u = {'timestamp': nts, 'metric': metric, 'value': v, 'tags': tags}
 
-            ptl.append(gr.post(self.get_url() + self.get_endpoint("put") + 
+            ptl.append(gr.post(self.get_url() + self.get_endpoint("put") +
                 '?summary=true&details=true', data=json.dumps(u)))
             ptc += 1
-            
+
             if ptc == ptcl:
                 ptc = 0
                 pts.append(list(ptl))
                 ptl = list()
-        
+
         if ptl:
             pts.append(list(ptl))
 
@@ -170,7 +159,7 @@ class Client():
             for n, slc in enumerate(pts):
                 gr.map(slc)
                 pts[n] = [x for x in slc if not 200 <= x.response.status_code <= 300]
-                
+
                 if verbose:
                     print 'Attempt %d: Request %d submitted with HTTP status codes %s' \
                         % (attempts + 1, n + 1, str([x.response.status_code for x in slc]))
@@ -182,15 +171,14 @@ class Client():
             total = len(values)
             print "%d of %d (%.2f%%) requests were successfully sent" \
                 % (total - fails, total, 100 * round((total - fails)/total, 2))
-        
+
         return {
             'points': len(values),
-            'success': len(values) - fails, 
+            'success': len(values) - fails,
             'failed': fails
         }
 
-
-    def query(self, metric, aggr='sum', tags=dict(), start='1h-ago', end=None, 
+    def query(self, metric, aggr='sum', tags=dict(), start='1h-ago', end=None,
         show_summary=False, show_json=False, nots=False, tsd=True, union=False):
         """ Enables extracting data from the storage system
 
@@ -226,15 +214,11 @@ class Client():
         'union': boolean, optional (default=False)
             Returns the points of the time series (i.e. metric + tags) in one list
         """
-        
         assert aggr in self.aggregators(), \
             'The aggregator is not valid. Check OTSDB docs for more details.'
-
         query = {'m': '%s:%s' % (aggr, metric), 'start': start, 'end': end, \
                  'show_summary': show_summary, 'tags': tags}
-
         response = self._make_request("query", query, False)
-
         if 200 <= response.status_code <= 300:
             result = None
             if show_json:
@@ -280,7 +264,6 @@ class Client():
             print 'No results found'
             return []
 
-
     def query_exp(self, aggr='sum', start='1d-ago', end=None, vpol=0, metrics=[],
         expr=[], show_json=True):
         """ Enables extracting data from the storage system
@@ -300,11 +283,11 @@ class Client():
             Determines which metrics are included in the expression.
 
         'vpol': int, required (default=0)
-            The value used to replace "missing" values, i.e. when a data point was 
+            The value used to replace "missing" values, i.e. when a data point was
             expected but couldn't be found in storage.
-        
+
         'expr': array of dict, required (default=[])
-            A list of one or more expressions over the metrics. 
+            A list of one or more expressions over the metrics.
 
         'show_json': boolean, optional (default=True)
             If true, returns the response in the JSON format
@@ -316,49 +299,41 @@ class Client():
         for m in metrics:
             assert not ['id', 'name'] in m.keys(), \
                 'The metric object must have the fields <id> and <name>'
-
         assert aggr in self.aggregators(), \
             'The aggregator is not valid. Check OTSDB docs for more details.'
-
         assert isinstance(expr, list), 'Field <expr> must be a list.'
         assert len(expr) >= 1, 'Field <expr> must have at least one expression'
         for e in expr:
             assert not ['id', 'expr'] in e.keys(), \
                 'The expression object must have the fields <id> and <expr>'
-        
         # Setting <time> definitions
         time = {
             'start': start,
             'end': end,
             'aggregator': aggr
         }
-
         # Setting <metric> and <policy> definitions
         metrics = [{
             'id': x['id'],
             'metric': x['name'],
             'fillPolicy': {
-                'policy': 'scalar', 
+                'policy': 'scalar',
                 'value': vpol
             }
         } for x in metrics]
-
         # Setting <expression> definitions
         expressions = [{
             'id': x['id'],
             'expr': x['expr']
         } for x in expr]
-
         # Building the data query
         query = {
            'time': time,
            'metrics': metrics,
-           'expressions': expressions     
+           'expressions': expressions
         }
-
         # Sending request to OTSDB and capturing HTTP response
         response = self._make_request("query_exp", query, False)
-
         if 200 <= response.status_code <= 300:
             print json.loads(response.text) if show_json else response.text
         else:
@@ -367,15 +342,12 @@ class Client():
             print 'No results found'
             return []
 
-
     @staticmethod
     def process_response(resp):
         try:
             res = json.loads(resp.text)
         except Exception:
             raise self.OpenTSDBError(resp.text)
-
         if 'error' in res:
             raise self.OpenTSDBError(res['error'])
-
         return res
