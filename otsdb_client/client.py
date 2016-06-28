@@ -19,8 +19,8 @@ import numpy as np
 from rest.client import Client
 
 class Connection(Client):
-    def __init__(self,server='localhost',port=4242):
-        self.client = Client(server=server, port=port)
+    #def __init__(self,server='localhost',port=4242):
+    #    self.client = Client(server=server, port=port)
 
     def test_get_statistics(self):
         print self.client.statistics()
