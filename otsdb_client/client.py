@@ -19,8 +19,8 @@ import numpy as np
 from rest.client import Client
 
 class Connection(object):
-    def __init__(self):
-        self.client = Client(server='localhost', port=4242)
+    def __init__(self,server='localhost',port=4242):
+        self.client = Client(server=server, port=port)
 
     def test_get_statistics(self):
         print self.client.statistics()
@@ -61,8 +61,7 @@ class Connection(object):
         print "#1 Query metric"
         print self.client.query(metric=metric)
         print "#2 Query metric"
-        print self.client.query(metric=metric, show_summary=True, show_json=True,
-            nots=True, tsd=False, union=True)
+        print self.client.query(metric=metric, show_summary=True, show_json=True,nots=True, tsd=False, union=True)
 
     def test_query_expr_metric(self):
         metrics = [
