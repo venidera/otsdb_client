@@ -18,7 +18,7 @@ import time
 import grequests as gr
 from datetime import datetime
 
-class Client(Object):
+class Client(object):
     def __init__(self, server='localhost', port=4242):
         self.server = server
         self.port = port
