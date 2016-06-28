@@ -1,1 +1,1 @@
-from otsdb_client.rest.Client as Connection
+from otsdb_client.rest import Client as Connection
