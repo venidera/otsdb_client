@@ -65,11 +65,17 @@ class Connection(Client):
 
     def test_query_expr_metric(self):
         metrics = [
-            {'id': 'a', 'name': 'test.a'},
-            {'id': 'b', 'name': 'test.b'}
+            {"id": "f1", "name": "test.f1", "tags": {'type': 'ts'}},
+            {"id": "f2", "name": "test.f2", "tags": {'type': 'ts'}}
         ]
-        expr = [
-            {'id': 'ex1', 'expr': 'a + b'},
-            {'id': 'ex2', 'expr': '4*a + 3*b'}
-        ]
-        print self.query_exp(metrics=metrics, expr=expr)
+
+        expr = {
+            "ex1": "f1 + f2",
+            "ex2": "ex1 * 2",
+            "ex3": "2 * ex2",
+            "ex4": "4*ex1 + 3*ex2",
+            "ex5": "ex4*f1 + f2",
+            "ex6": "ex5 - ex4 + ex3 + ex2 - ex1",
+        }
+
+        print self.client.hquery_exp(metrics=metrics, expr=expr)

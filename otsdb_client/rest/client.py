@@ -15,6 +15,8 @@
 
 import json
 import time
+import numpy as np
+import itertools
 import grequests as gr
 from datetime import datetime
 
@@ -262,6 +264,69 @@ class Client(object):
         else:
             print 'No results found'
             return []
+
+    def hquery_exp(self, aggr='sum', start='1d-ago', end=None, vpol=0, metrics=[], 
+        expr={}):
+        """ Allows for querying data using expressions.
+
+        Parameters
+        ----------
+        'aggr' : string, required (default=sum)
+            The global aggregation function to use for all metrics. It may be 
+            overridden on a per metric basis.
+
+        'start' : string, required (default=1h-ago)
+            The start time for the query. This may be relative, absolute human 
+            readable or absolute Unix Epoch.
+
+        'end' : string, optional (default=current time)
+            The end time for the query. If left out, the end is now
+
+        'vpol': (int, long, float), required (default=0)
+            The value used to replace "missing" values, i.e. when a data point was 
+            expected but couldn't be found in storage.
+        
+        'metrics': array of dict, required (default=[])
+            Determines which metrics are included in the expression.
+
+        'expr': dict, required (default=[])
+            A dictionary with one or more expressions over the metrics.
+        """
+
+        # Checking for data consistency
+        assert isinstance(metrics, list), 'Field <metrics> must be a list.'
+        assert len(metrics) >= 1, 'Field <metrics> must have at least one element'
+        for m in metrics:
+            assert not ['id', 'name', 'tags'] in m.keys(), \
+                'The metric object must have the fields <id>, <name> and <tags>'
+            assert len(m['tags']) >= 1, \
+                'The field <metric.tags> must have at least one element'
+
+        assert aggr in self.aggregators(), \
+            'The aggregator is not valid. Check OTSDB docs for more details.'
+
+        assert isinstance(expr, dict), 'Field <expr> must be a dictionary.'
+        assert len(expr) >= 1, 'The field <expr> must have at least one element'
+
+        res = []
+        for a, b in itertools.combinations(reversed(sorted(expr.iteritems())), 2):
+            expr[a[0]] = expr[a[0]].replace(b[0], "(%s)" % b[1])
+
+        for n, metric in enumerate(metrics):
+
+            for key in expr:
+                expr[key] = expr[key].replace(metric['id'], 'res[%d]' % n)
+
+            # Requesting from query endpoint
+            response = self.query(metric=metric['name'], aggr=aggr, 
+                tags=metric['tags'], start=start, end=end, nots=True, union=True)
+
+            res.append(response['results']['values'])
+
+        m = max(len(x) for x in res)
+        res = np.array([np.append(x, [vpol] * (m - len(x))) for x in res])
+
+        return dict([(key, eval(expr[key]).tolist()) for key in sorted(expr)])
 
     def query_exp(self, aggr='sum', start='1d-ago', end=None, vpol=0, metrics=[],
         expr=[], show_json=True):
