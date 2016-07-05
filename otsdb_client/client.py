@@ -78,4 +78,4 @@ class Connection(Client):
             "ex6": "ex5 - ex4 + ex3 + ex2 - ex1",
         }
 
-        print self.client.hquery_exp(metrics=metrics, expr=expr)
+        print self.hquery_exp(metrics=metrics, expr=expr)
