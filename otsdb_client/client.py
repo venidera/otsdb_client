@@ -15,7 +15,6 @@
 
 import json
 import random
-import numpy as np
 from rest.client import Client
 
 class Connection(Client):
@@ -38,16 +37,16 @@ class Connection(Client):
         print("#1 Put metric")
         values = random.sample(range(30), 25)
         self.put(verbose=True, metric=metric, values=values,
-            tags=dict({'mean': np.mean(values), 'std': np.std(values)}))
+            tags=dict({'tagk1': 'tagv1'}))
         print("#2 Put metric")
         values = random.sample(range(10), 10)
         ts = random.sample(range(10000,11000), 10)
         self.put(verbose=True, metric=metric, timestamp=ts, values=values,
-            tags=dict({'mean': np.mean(values), 'std': np.std(values)}))
+            tags=dict({'tagk2': 'tagv2'}))
         print("#3 Put metric")
         values = random.sample(range(500), 500)
         self.put(verbose=True, metric=metric, values=values, ptcl=30,
-            tags=dict({'mean': np.mean(values), 'std': np.std(values)}))
+            tags=dict({'tagk3': 'tagv3'}))
 
     def test_suggest(self):
         print("#1 Suggest")

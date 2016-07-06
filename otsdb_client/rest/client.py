@@ -15,7 +15,6 @@
 
 import json
 import time
-import numpy as np
 import itertools
 import grequests as gr
 from datetime import datetime
@@ -324,7 +323,7 @@ class Client(object):
             res.append(response['results']['values'])
 
         m = max(len(x) for x in res)
-        res = np.array([np.append(x, [vpol] * (m - len(x))) for x in res])
+        res = [ x + ([vpol] * (m - len(x))) for x in res]
 
         return dict([(key, eval(expr[key]).tolist()) for key in sorted(expr)])
 
