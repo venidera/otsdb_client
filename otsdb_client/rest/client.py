@@ -162,16 +162,16 @@ class Client(object):
                 pts[n] = [x for x in slc if not 200 <= x.response.status_code <= 300]
 
                 if verbose:
-                    print 'Attempt %d: Request %d submitted with HTTP status codes %s' \
-                        % (attempts + 1, n + 1, str([x.response.status_code for x in slc]))
+                    print('Attempt %d: Request %d submitted with HTTP status codes %s' \
+                        % (attempts + 1, n + 1, str([x.response.status_code for x in slc])))
 
             attempts += 1
             fails = sum(len(x) for x in pts)
 
         if verbose:
             total = len(values)
-            print "%d of %d (%.2f%%) requests were successfully sent" \
-                % (total - fails, total, 100 * round((total - fails)/total, 2))
+            print("%d of %d (%.2f%%) requests were successfully sent" \
+                % (total - fails, total, 100 * round((total - fails)/total, 2)))
 
         return {
             'points': len(values),
@@ -262,30 +262,30 @@ class Client(object):
                     result['summary'] = data[-1]['statsSummary']
             return result
         else:
-            print 'No results found'
+            print('No results found')
             return []
 
-    def hquery_exp(self, aggr='sum', start='1d-ago', end=None, vpol=0, metrics=[], 
+    def hquery_exp(self, aggr='sum', start='1d-ago', end=None, vpol=0, metrics=[],
         expr={}):
         """ Allows for querying data using expressions.
 
         Parameters
         ----------
         'aggr' : string, required (default=sum)
-            The global aggregation function to use for all metrics. It may be 
+            The global aggregation function to use for all metrics. It may be
             overridden on a per metric basis.
 
         'start' : string, required (default=1h-ago)
-            The start time for the query. This may be relative, absolute human 
+            The start time for the query. This may be relative, absolute human
             readable or absolute Unix Epoch.
 
         'end' : string, optional (default=current time)
             The end time for the query. If left out, the end is now
 
         'vpol': (int, long, float), required (default=0)
-            The value used to replace "missing" values, i.e. when a data point was 
+            The value used to replace "missing" values, i.e. when a data point was
             expected but couldn't be found in storage.
-        
+
         'metrics': array of dict, required (default=[])
             Determines which metrics are included in the expression.
 
@@ -318,7 +318,7 @@ class Client(object):
                 expr[key] = expr[key].replace(metric['id'], 'res[%d]' % n)
 
             # Requesting from query endpoint
-            response = self.query(metric=metric['name'], aggr=aggr, 
+            response = self.query(metric=metric['name'], aggr=aggr,
                 tags=metric['tags'], start=start, end=end, nots=True, union=True)
 
             res.append(response['results']['values'])
@@ -399,11 +399,11 @@ class Client(object):
         # Sending request to OTSDB and capturing HTTP response
         response = self._make_request("query_exp", query, False)
         if 200 <= response.status_code <= 300:
-            print json.loads(response.text) if show_json else response.text
+            print(json.loads(response.text) if show_json else response.text)
         else:
             # Esta dando erro 500 aqui
-            print response.text
-            print 'No results found'
+            print(response.text)
+            print('No results found')
             return []
 
     @staticmethod

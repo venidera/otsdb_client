@@ -23,45 +23,45 @@ class Connection(Client):
     #    self.client = Client(server=server, port=port)
 
     def test_get_statistics(self):
-        print self.statistics()
+        print(self.statistics())
 
     def test_get_aggregators(self):
-        print self.aggregators()
+        print(self.aggregators())
 
     def test_get_filters(self):
-        print self.filters()
+        print(self.filters())
 
     def test_get_version(self):
-        print self.version()
+        print(self.version())
 
     def test_put_metric(self, metric='test.m'):
-        print "#1 Put metric"
+        print("#1 Put metric")
         values = random.sample(range(30), 25)
         self.put(verbose=True, metric=metric, values=values,
             tags=dict({'mean': np.mean(values), 'std': np.std(values)}))
-        print "#2 Put metric"
+        print("#2 Put metric")
         values = random.sample(range(10), 10)
         ts = random.sample(range(10000,11000), 10)
         self.put(verbose=True, metric=metric, timestamp=ts, values=values,
             tags=dict({'mean': np.mean(values), 'std': np.std(values)}))
-        print "#3 Put metric"
+        print("#3 Put metric")
         values = random.sample(range(500), 500)
         self.put(verbose=True, metric=metric, values=values, ptcl=30,
             tags=dict({'mean': np.mean(values), 'std': np.std(values)}))
 
     def test_suggest(self):
-        print "#1 Suggest"
-        print self.suggest()
-        print "#2 Suggest"
-        print self.suggest(m=2)
-        print "#3 Suggest"
-        print self.suggest(q='test.')
+        print("#1 Suggest")
+        print(self.suggest())
+        print("#2 Suggest")
+        print(self.suggest(m=2))
+        print("#3 Suggest")
+        print(self.suggest(q='test.'))
 
     def test_query_metric(self, metric='test.m'):
-        print "#1 Query metric"
-        print self.query(metric=metric)
-        print "#2 Query metric"
-        print self.query(metric=metric, show_summary=True, show_json=True,nots=True, tsd=False, union=True)
+        print("#1 Query metric")
+        print(self.query(metric=metric))
+        print("#2 Query metric")
+        print(self.query(metric=metric, show_summary=True, show_json=True,nots=True, tsd=False, union=True))
 
     def test_query_expr_metric(self):
         metrics = [
@@ -78,4 +78,4 @@ class Connection(Client):
             "ex6": "ex5 - ex4 + ex3 + ex2 - ex1",
         }
 
-        print self.hquery_exp(metrics=metrics, expr=expr)
+        print(self.hquery_exp(metrics=metrics, expr=expr))
