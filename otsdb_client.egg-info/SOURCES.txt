@@ -10,3 +10,5 @@ otsdb_client.egg-info/SOURCES.txt
 otsdb_client.egg-info/dependency_links.txt
 otsdb_client.egg-info/requires.txt
 otsdb_client.egg-info/top_level.txt
+otsdb_client/rest/__init__.py
+otsdb_client/rest/client.py
