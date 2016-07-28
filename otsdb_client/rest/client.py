@@ -81,7 +81,7 @@ class Client(object):
         query = {'type': t, 'q': q, 'max': m}
         return self._make_request("suggest", query)
 
-    def put(self, metric=None, timestamp=[], values=[], tags=dict(),
+    def put(self, metric=None, timestamps=[], values=[], tags=dict(),
         details=True, verbose=True, ptcl=10, att=5):
         """ Put time serie points into OpenTSDB over HTTP.
 
@@ -90,7 +90,7 @@ class Client(object):
         'metric' : string, required (default=None)
             The name of the metric you are storing.
 
-        'timestamp' : int, required (default=None) ** [generated over mktime]
+        'timestamps' : int, required (default=None) ** [generated over mktime]
             A Unix epoch style timestamp in seconds or milliseconds.
 
         'values' : array, required (default=[])
@@ -113,12 +113,12 @@ class Client(object):
         """
         assert isinstance(metric, str), 'Field <metric> must be a string.'
         assert isinstance(values, list), 'Field <values> must be a list.'
-        assert isinstance(timestamp, list), 'Field <timestamps> must be a list.'
+        assert isinstance(timestamps, list), 'Field <timestamps> must be a list.'
 
-        if len(timestamp) > 0:
-            assert len(timestamp) == len(values), \
+        if len(timestamps) > 0:
+            assert len(timestamps) == len(values), \
                 'Field <timestamps> dont fit field <values>.'
-            assert all(isinstance(x, (int, datetime)) for x in timestamp), \
+            assert all(isinstance(x, (int, datetime)) for x in timestamps), \
                 'Field <timestamps> must be integer or datetime'
 
         pts = list()
@@ -128,7 +128,7 @@ class Client(object):
         for n, v in enumerate(values):
             v = float(v)
 
-            if not timestamp:
+            if not timestamps:
                 current_milli_time = lambda: int(round(time.time() * 1000))
                 nts = current_milli_time()
             else:
@@ -234,11 +234,11 @@ class Client(object):
                                 dpss[k] = v
                     points = sorted(dpss.items())
                     if not nots:
-                        result = {'results':{'timestamp':[],'values':[]}}
+                        result = {'results':{'timestamps':[],'values':[]}}
                         if tsd:
-                            result['results']['timestamp'] = [datetime.fromtimestamp(float(x[0])) for x in points]
+                            result['results']['timestamps'] = [datetime.fromtimestamp(float(x[0])) for x in points]
                         else:
-                            result['results']['timestamp'] = [x[0] for x in points]
+                            result['results']['timestamps'] = [x[0] for x in points]
                     else:
                         result = {'results':{'values':[]}}
                     result['results']['values'] = [float(x[1]) for x in points]
@@ -248,14 +248,14 @@ class Client(object):
                         if 'metric' in x.keys():
                             dps = x['dps']
                             points = sorted(dps.items())
-                            resd = {'metric':x['metric'],'tags':x['tags'],'timestamp':[],'values':[float(y[1]) for y in points]}
+                            resd = {'metric':x['metric'],'tags':x['tags'],'timestamps':[],'values':[float(y[1]) for y in points]}
                             if not nots:
                                 if tsd:
-                                    resd['timestamp'] = [datetime.fromtimestamp(float(x[0])) for x in points]
+                                    resd['timestamps'] = [datetime.fromtimestamp(float(x[0])) for x in points]
                                 else:
-                                    resd['timestamp'] = [x[0] for x in points]
+                                    resd['timestamps'] = [x[0] for x in points]
                             else:
-                                del resd['timestamp']
+                                del resd['timestamps']
                             result['results'].append(resd)
                 if show_summary:
                     result['summary'] = data[-1]['statsSummary']
