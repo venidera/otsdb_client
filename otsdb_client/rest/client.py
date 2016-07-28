@@ -241,14 +241,14 @@ class Client(object):
                             result['results']['timestamp'] = [x[0] for x in points]
                     else:
                         result = {'results':{'values':[]}}
-                    result['results']['values'] = [x[1] for x in points]
+                    result['results']['values'] = [float(x[1]) for x in points]
                 else:
                     result = {'results':[]}
                     for x in data:
                         if 'metric' in x.keys():
                             dps = x['dps']
                             points = sorted(dps.items())
-                            resd = {'metric':x['metric'],'tags':x['tags'],'timestamp':[],'values':[y[1] for y in points]}
+                            resd = {'metric':x['metric'],'tags':x['tags'],'timestamp':[],'values':[float(y[1]) for y in points]}
                             if not nots:
                                 if tsd:
                                     resd['timestamp'] = [datetime.fromtimestamp(float(x[0])) for x in points]
@@ -259,7 +259,6 @@ class Client(object):
                             result['results'].append(resd)
                 if show_summary:
                     result['summary'] = data[-1]['statsSummary']
-            result['results']['values'] = list(map(float,result['results']['values']))
             return result
         else:
             print('No results found')
