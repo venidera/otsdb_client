@@ -259,6 +259,7 @@ class Client(object):
                             result['results'].append(resd)
                 if show_summary:
                     result['summary'] = data[-1]['statsSummary']
+            result['results']['values'] = list(map(float,result['results']['values']))
             return result
         else:
             print('No results found')
