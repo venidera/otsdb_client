@@ -83,7 +83,7 @@ class Client(object):
 
     def put(self, metric=None, timestamp=[], values=[], tags=dict(),
         details=True, verbose=True, ptcl=10, att=5):
-        """ Allows for storing data in OpenTSDB over HTTP and Telnet.
+        """ Put time serie points into OpenTSDB over HTTP.
 
         Parameters
         ----------
@@ -106,7 +106,7 @@ class Client(object):
             Enable verbose output.
 
         'ptcl' : int, required (default=10)
-            Size of each request buffer
+            Number of points sent per http request
 
         'att' : int, required (default=5)
             Number of HTTP request attempts
