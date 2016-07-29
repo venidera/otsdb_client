@@ -82,7 +82,7 @@ class Client(object):
         return self._make_request("suggest", query)
 
     def put(self, metric=None, timestamps=[], values=[], tags=dict(),
-        details=True, verbose=True, ptcl=10, att=5):
+        details=True, verbose=True, ptcl=20, att=5):
         """ Put time serie points into OpenTSDB over HTTP.
 
         Parameters
