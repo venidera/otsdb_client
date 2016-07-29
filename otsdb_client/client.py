@@ -15,7 +15,7 @@
 
 import json
 import random
-from rest.client import Client
+from otsdb_client.rest.client import Client
 
 class Connection(Client):
     #def __init__(self,server='localhost',port=4242):
