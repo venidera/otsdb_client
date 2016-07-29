@@ -15,7 +15,7 @@
 
 import json
 import random
-from otsdb_client.rest.client import Client
+from rest.client import Client
 
 class Connection(Client):
     #def __init__(self,server='localhost',port=4242):
@@ -38,11 +38,13 @@ class Connection(Client):
         values = random.sample(range(30), 25)
         self.put(verbose=True, metric=metric, values=values,
             tags=dict({'tagk1': 'tagv1'}))
+        
         print("#2 Put metric")
         values = random.sample(range(10), 10)
         ts = random.sample(range(10000,11000), 10)
-        self.put(verbose=True, metric=metric, timestamp=ts, values=values,
+        self.put(verbose=True, metric=metric, timestamps=ts, values=values,
             tags=dict({'tagk2': 'tagv2'}))
+        
         print("#3 Put metric")
         values = random.sample(range(500), 500)
         self.put(verbose=True, metric=metric, values=values, ptcl=30,
@@ -78,3 +80,6 @@ class Connection(Client):
         }
 
         print(self.hquery_exp(metrics=metrics, expr=expr))
+
+client = Connection()
+print client.test_put_metric()

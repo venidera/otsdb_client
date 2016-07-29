@@ -132,7 +132,7 @@ class Client(object):
                 current_milli_time = lambda: int(round(time.time() * 1000))
                 nts = current_milli_time()
             else:
-                nts = timestamp[n]
+                nts = timestamps[n]
 
                 if isinstance(nts, datetime):
                     nts = int(time.mktime(nts.timetuple()))
@@ -141,29 +141,29 @@ class Client(object):
 
             u = {'timestamp': nts, 'metric': metric, 'value': v, 'tags': tags}
 
-            ptl.append(gr.post(self.get_url() + self.get_endpoint("put") +
-                '?summary=true&details=true', data=json.dumps(u)))
+            ptl.append(u)
             ptc += 1
 
             if ptc == ptcl:
                 ptc = 0
-                pts.append(list(ptl))
+                pts.append(gr.post(self.get_url() + self.get_endpoint("put") +
+                '?summary=true&details=true', data=json.dumps(ptl)))
                 ptl = list()
 
         if ptl:
-            pts.append(list(ptl))
+            pts.append(gr.post(self.get_url() + self.get_endpoint("put") +
+                '?summary=true&details=true', data=json.dumps(ptl)))
 
         attempts = 0
         fails = 1
         while attempts < att and fails > 0:
-            for n, slc in enumerate(pts):
-                gr.map(slc)
-                pts[n] = [x for x in slc if not 200 <= x.response.status_code <= 300]
+            gr.map(pts)
+            
+            if verbose:
+                print('Attempt %d: Request submitted with HTTP status codes %s' \
+                    % (attempts + 1, str([x.response.status_code for x in pts])))
 
-                if verbose:
-                    print('Attempt %d: Request %d submitted with HTTP status codes %s' \
-                        % (attempts + 1, n + 1, str([x.response.status_code for x in slc])))
-
+            pts = [x for x in pts if not 200 <= x.response.status_code <= 300]
             attempts += 1
             fails = sum(len(x) for x in pts)
 
