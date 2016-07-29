@@ -80,6 +80,3 @@ class Connection(Client):
         }
 
         print(self.hquery_exp(metrics=metrics, expr=expr))
-
-client = Connection()
-print client.test_put_metric()
