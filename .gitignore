@@ -64,3 +64,6 @@ target/
 
 # VirtualEnv Directories
 venv*
+
+# egg
+egg-info
