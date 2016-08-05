@@ -45,7 +45,8 @@ $ pip install git+https://github.com/venidera/otsdb_client.git
 
 * Check for limits and blocking impacts: Done - Solution: use grequests to make async http calls;
 * Implement worker or multithread: pending (inpired by [potsdb](https://github.com/orionvm/potsdb));
-* Implement the reading with chunks: pending.
+* Implement the reading with chunks: pending;
+* Cover all endpoints listed in the [OpenTSDB HTTP API doc](http://opentsdb.net/docs/build/html/api_http/index.html).
 
 ## How to use
 
