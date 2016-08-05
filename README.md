@@ -14,6 +14,7 @@ This package was made and tested with Python 2.7 and 3.5.
 
 * [Requirements](#requirements)
 * [Installation](#installation)
+* [Development and Tests](#developmentandtests)
 * [To-do list](#todolist)
 * [How to use](#howtouse)
 * [Maintainers](#maintainers)
@@ -40,6 +41,26 @@ Install using pip:
 ```
 $ pip install git+https://github.com/venidera/otsdb_client.git
 ```
+
+## Development and tests
+
+To avoid errors, the development can be done in the repo directory but the tests must be executed in an isolated directory because `__init__.py` files can hide import errors.
+An example of installation for tests is presented below:
+
+```
+$ cd <repo>
+$ mkdir tests
+$ cd tests
+$ virtualenv --python=python3.5 --prompt=" <package name> " venv-3.5
+$ source venv-3.5/bin/activate
+$ pip install pip setuptools --upgrade
+$ cd .. ; python setup.py install ; cd -
+```
+
+The steps listed above will create a virtualenv with the package installed. If you change the code of the package you must execute `cd .. ; python setup.py install ; cd -``
+The tests must consider the import call of the package and its classes and functions must be tested.
+If everything works fine, commit changes and execute `git pull && git push`.
+All files created inside the `tests` directory must be kept untracked in the repository.
 
 ## To-do list
 
@@ -162,25 +183,12 @@ Query a metric for values of all its tags since 1 day ago:
 results = c.query(metric='metric_name',aggr='sum',tags={'tagn':'*'},start='1d-ago')
 ```
 
-### Tests
-
-```
-# Begining the tests
-client = RESTClientTest()
-
-client.test_get_version()
-client.test_get_filters()
-client.test_get_statistics()
-client.test_get_aggregators()
-#client.test_put_metric()
-client.test_suggest()
-client.test_query_metric()
-client.test_query_expr_metric()
-```
-
 ## Maintainers
 
-**Andre E. Toscano** and **Rafael G. Vieira** from [Venidera Research and Development](http://portal.venidera.com).
+Venidera's development team:
+
+* Andre E. Toscano - [andre@venidera.com](mailto:andre@venidera.com);
+* Rafael G. Vieira - [rafael@venidera.com](mailto:rafael@venidera.com).
 
 ## License
 
