@@ -354,6 +354,9 @@ class Connection(object):
 
         return dict([(key, eval(expr[key]).tolist()) for key in sorted(expr)])
 
+    def define_filter(self,tagk=''):
+        return dict()
+
     def query_exp(self, aggr='sum', start='1d-ago', end=None, vpol=0, metrics=[],
         expr=[], show_json=True):
         """ Enables extracting data from the storage system
