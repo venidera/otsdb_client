@@ -59,7 +59,7 @@ $ cd .. ; python setup.py install ; cd -
 
 The steps listed above will create a virtualenv with the package installed. If you change the code of the package you must execute `cd .. ; python setup.py install ; cd -``
 The tests must consider the import call of the package and its classes and functions must be tested.
-If everything works fine, commit changes and execute `git pull && git push`.
+If everything works fine, commit changes and execute `git pull && git push` or a `pull request`.
 All files created inside the `tests` directory must be kept untracked in the repository.
 
 ## To-do list
