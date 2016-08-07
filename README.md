@@ -150,7 +150,7 @@ ts = int(mktime(datatime(2012,01,10,13,00).timetuple()))
 c.put(metric='metric.name',ts=ts,value=321.20,tags={'tagname':'tagvalue'})
 ```
 
-### Read data to OpenTSDB (`query`):
+### Read data from OpenTSDB (`query`):
 
 Read points (aggregated  or not) of a time serie. At this moment, only simple use of the `/api/query` endpoint was implemented. The aggregator defined will be validated with the `/api/aggregators` endpoint results.
 
@@ -187,8 +187,8 @@ results = c.query(metric='metric_name',aggr='sum',tags={'tagn':'*'},start='1d-ag
 
 Venidera's development team:
 
-* Andre E. Toscano - [andre@venidera.com](mailto:andre@venidera.com);
-* Rafael G. Vieira - [rafael@venidera.com](mailto:rafael@venidera.com).
+* [Andre E. Toscano](https://github.com/aemitos) - [andre@venidera.com](mailto:andre@venidera.com);
+* [Rafael G. Vieira](https://github.com/rafaelgiordano12) - [rafael@venidera.com](mailto:rafael@venidera.com).
 
 ## License
 
