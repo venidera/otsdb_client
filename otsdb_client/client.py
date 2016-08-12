@@ -43,9 +43,7 @@ class Connection(object):
         self.headers = {'content-type': "application/json"}
         self.aggregators = self.aggregators()
         
-        self.ids = {
-            "filter": {}, "metric": {}, "expr": {}
-        }
+        self.ids = {"filter": {}, "metric": {}}
         
         ping(server, port)
 
@@ -379,8 +377,8 @@ class Connection(object):
         return obj
 
     def query_expressions(self, aggr='sum', start='1d-ago', end='now', vpol=0, 
-        metrics=[], exprs=[], dsampler=None, show_json=True):
-        """ Enables extracting data from the storage system
+        metrics=[], exprs=[], dsampler=None):
+        """ Allows for querying data using expressions.
 
         Parameters
         ----------
@@ -393,42 +391,54 @@ class Connection(object):
         'end' : string, optional (default=current time)
             An end time for the query.
 
-        'metrics': array of dict, required (default=[])
-            Determines which metrics are included in the expression.
-
-        'vpol': int, required (default=0)
+        'vpol': [int, float, str], required (default=0)
             The value used to replace "missing" values, i.e. when a data point was
             expected but couldn't be found in storage.
 
-        'expr': array of dict, required (default=[])
-            A list of one or more expressions over the metrics.
+        'metrics': array of tuples, required (default=[])
+            Determines the pairs (metric, tags) in the expressions.
 
-        'show_json': boolean, optional (default=True)
-            If true, returns the response in the JSON format
+        'exprs': array of tuples, required (default=[])
+            A list with one or more pairs (id, expr) of expressions.
+
+        'dsampler': tuple of three elements, optional (default=None)
+            Reduces the number of data points returned, given an interval
         """
+        assert aggr in self.aggregators, \
+            'The aggregator is not valid. Check OTSDB docs for more details.'
 
-        # Checking data consistence
+        assert any(isinstance(vpol, i) for i in [int, float]) or \
+                (isinstance(vpol, str) and vpol in ['null', 'nan']), \
+            'Field <vpol> is not valid.'
+
         assert isinstance(metrics, list), 'Field <metrics> must be a list.'
         assert len(metrics) > 0, 'Field <metrics> must have at least one metric'  
         for m in metrics:
             assert len(m) == 2, \
-                'Tuple must have the (metric, [tag]) format.'
+                'Tuple must have the (metric, tags) format.'   
+            assert isinstance(m[0], str), \
+                'Field <metric> must be a string.'
             assert isinstance(m[1], list), \
                 'Field <tags> must be a list.'
-
-        assert aggr in self.aggregators, \
-            'The aggregator is not valid. Check OTSDB docs for more details.'
 
         assert isinstance(exprs, list), 'Field <exprs> must be a list.'
         assert len(exprs) > 0, 'Field <exprs> must have at least one metric'  
         for e in exprs:
             assert len(e) == 2, \
                 'Tuple must have the (id, expr) format.'
+            assert isinstance(e[0], str), \
+                'Field <id> must be a string.'
+            assert isinstance(e[1], str), \
+                'Field <expr> must be a string.'
 
         if dsampler:
             assert 2 <= len(dsampler) <= 3, \
                 'Field <dsampler> must be composed by (interval, aggr) ' \
                 'or (interval, aggr, vpol).'
+            assert isinstance(dsampler[0], str), \
+                'Field <interval> must be a string.'
+            assert dsampler[1] in self.aggregators, \
+                'Field <aggr> is not a valid aggregator.'
 
         # Setting <time> definitions
         time = {
@@ -495,79 +505,27 @@ class Connection(object):
         resp = self._post(endpoint="query_exp", data=data)
         return self.process_response(resp)
 
-    def query_summing(self, start='1d-ago', end='now', vpol=0, 
-        metrics=[], dsampler=None, show_json=True):
-        
-        # Checking data consistence
+    def query_summing(self, aggr='sum', start='1d-ago', end='now', vpol=0, 
+        metrics=[], dsampler=None):
+        """ Sum all required metrics using query with expressions """
         assert isinstance(metrics, list), 'Field <metrics> must be a list.'
         assert len(metrics) > 0, 'Field <metrics> must have at least one metric'  
         for m in metrics:
             assert len(m) == 2, \
-                'Tuple must have the (metric, [tag]) format.'
+                'Tuple must have the (metric, tags) format.'   
+            assert isinstance(m[0], str), \
+                'Field <metric> must be a string.'
             assert isinstance(m[1], list), \
                 'Field <tags> must be a list.'
 
-        if dsampler:
-            assert 2 <= len(dsampler) <= 3, \
-                'Field <dsampler> must be composed by (interval, aggr) ' \
-                'or (interval, aggr, vpol).'
-
-        # Setting <time> definitions
-        time = {
-            'start': start,
-            'aggregator': "sum",
-            'end': end
-        }
-        if dsampler:
-            time['downsampler'] = self.build_downsampler(
-                interval=dsampler[0], aggr=dsampler[1], 
-                vpol=dsampler[2] if len(dsampler) == 3 else None)
-
-        # Setting <filters> definitions
-        filters = {i[0]: self.build_filter(tags=i[1]) for i in metrics}
- 
-        # Setting <metric> definitions
-        q_metrics = []
         expr = ""
         for m in metrics:
-            obj = {
-                'id': self.gen_id(tid="metric", desc=m[0]),
-                'filter': filters[m[0]]['id'],
-                'metric': m[0]
-            }
-            expr += "%s + " % obj['id']
-
-            if vpol is not None:
-                obj['fillPolicy'] = self.build_policy(vpol)
-            q_metrics.append(obj)
+            expr += "%s + " % m[0]
         expr = expr[:-3]
-        
-        filters = filters.values()
-        filters = [i for n, i in enumerate(filters) if i not in filters[n + 1:]]
 
-        assert isinstance(filters, list) and len(filters) > 0, \
-            'Object filter is not valid.'
-
-        # Setting <expression> definitions
-        q_exprs = [{'id': 'sum', 'expr': expr}]
-
-        outputs = [{  
-            'id': 'sum', 
-            'alias': 'Sum of all metrics'
-        }]
-
-        # Building the data query
-        data = {
-           'time': time,
-           'metrics': q_metrics,
-           'filters': filters,
-           'expressions': q_exprs,
-           'outputs': outputs
-        }
-        print data
-        # Sending request to OTSDB and capturing HTTP response
-        resp = self._post(endpoint="query_exp", data=data)
-        return self.process_response(resp)
+        expressions = [("sum", expr)]
+        return self.query_expressions(aggr='sum', start=start, end=end, vpol=vpol,
+            metrics=metrics, exprs=expressions, dsampler=dsampler)
 
     def dumps(self, x):
         return tdumps(x, default=str)
