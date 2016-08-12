@@ -38,14 +38,10 @@ class Connection(object):
         self.server = server
         self.port = port
         ping(server, port)
-
         self.url = 'http://%s:%d' % (server, port)
         self.headers = {'content-type': "application/json"}
         self.aggregators = self.aggregators()
-
-        self.ids = {
-            "filter": 0, "metric": 0, "expression": 0
-        }
+        self.ids = {"filter": {}, "metric": {}}
 
     def get_endpoint(self, key=""):
         endpoint = '/api' + {
@@ -324,17 +320,46 @@ class Connection(object):
             print('No results found')
             return []
 
-    def generate_id(self, tid=""):
+    def gen_id(self, tid="", desc=""):
         assert tid in self.ids.keys(), "Field <tip> is not valid."
+        assert desc, "Field <desc> is not valid."
 
-        self.ids[tid] += 1
-        return "%s%d" % (tid[:1], self.ids[tid])
+        if desc not in self.ids[tid].keys():
+            if len(self.ids[tid]) == 0:
+                self.ids[tid][desc] = 1
+            else:
+                self.ids[tid][desc] = max(self.ids[tid].values()) + 1
+        return "%s%d" % (tid[:1], self.ids[tid][desc])
 
-    def generate_filter(self, tags=[], group=False):
+    def build_policy(self, vpol=None):
+        assert vpol != None, \
+            'Field <vpol> must have a value.'
+
+        if vpol == 0:
+            return {'policy': 'zero'}
+        elif any(isinstance(vpol, i) for i in [int, float]):
+            return {'policy': 'scalar', 'value': vpol}
+        elif vpol in ['nan', 'null']:
+            return {'policy': vpol}
+        else:
+            assert False, 'Field <vpol> is not valid.'
+
+    def build_downsampler(self, aggr='max', interval=None, vpol=None):
+        assert interval != None, \
+            'Field <interval> is not valid.'
+        assert aggr in self.aggregators, \
+            'The aggregator is not valid. Check OTSDB docs for more details.'
+
+        ret = {'interval': interval, 'aggregator': aggr}
+        if vpol:
+            ret['fillPolicy'] = self.build_policy(vpol)
+        return ret
+
+    def build_filter(self, tags=[], group=False):
         assert len(tags) > 0 and isinstance(tags, list), \
             'Field <tags> is not valid.'
 
-        obj = {"id" : self.generate_id("filter"), "tags" : []}
+        obj = {"id" : self.gen_id("filter", self.dumps(tags)), "tags" : []}
         for t in tags:
             obj["tags"].append(
                 {
@@ -347,9 +372,9 @@ class Connection(object):
 
         return obj
 
-    def query_expressions(self, aggr='sum', start='1d-ago', end=None, vpol=0, metrics=[],
-        tags=[], expr=[], show_json=True):
-        """ Enables extracting data from the storage system
+    def query_expressions(self, aggr='sum', start='1d-ago', end='now', vpol=0,
+        metrics=[], exprs=[], dsampler=None):
+        """ Allows for querying data using expressions.
 
         Parameters
         ----------
@@ -362,78 +387,140 @@ class Connection(object):
         'end' : string, optional (default=current time)
             An end time for the query.
 
-        'metrics': array of dict, required (default=[])
-            Determines which metrics are included in the expression.
-
-        'vpol': int, required (default=0)
+        'vpol': [int, float, str], required (default=0)
             The value used to replace "missing" values, i.e. when a data point was
             expected but couldn't be found in storage.
 
-        'expr': array of dict, required (default=[])
-            A list of one or more expressions over the metrics.
+        'metrics': array of tuples, required (default=[])
+            Determines the pairs (metric, tags) in the expressions.
 
-        'show_json': boolean, optional (default=True)
-            If true, returns the response in the JSON format
+        'exprs': array of tuples, required (default=[])
+            A list with one or more pairs (id, expr) of expressions.
+
+        'dsampler': tuple of three elements, optional (default=None)
+            Reduces the number of data points returned, given an interval
         """
-
-        # Checking data consistence
-        assert isinstance(metrics, list), 'Field <metrics> must be a list.'
-        assert len(metrics) >= 1, 'Field <metrics> must have at least one metric'
-        for m in metrics:
-            assert not ['id', 'name'] in m.keys(), \
-                'The metric object must have the fields <id> and <name>'
-        assert len(tags) > 0 and isinstance(tags, list), \
-            'Field <tags> is not valid.'
         assert aggr in self.aggregators, \
             'The aggregator is not valid. Check OTSDB docs for more details.'
-        assert isinstance(expr, list), 'Field <expr> must be a list.'
-        assert len(expr) > 0, 'Field <expr> must have at least one expression'
-        for e in expr:
-            assert not ['id', 'expr'] in e.keys(), \
-                'The expression object must have the fields <id> and <expr>'
 
+        assert any(isinstance(vpol, i) for i in [int, float]) or \
+                (isinstance(vpol, str) and vpol in ['null', 'nan']), \
+            'Field <vpol> is not valid.'
+
+        assert isinstance(metrics, list), 'Field <metrics> must be a list.'
+        assert len(metrics) > 0, 'Field <metrics> must have at least one metric'
+        for m in metrics:
+            assert len(m) == 2, \
+                'Tuple must have the (metric, tags) format.'
+            assert isinstance(m[0], str), \
+                'Field <metric> must be a string.'
+            assert isinstance(m[1], list), \
+                'Field <tags> must be a list.'
+
+        assert isinstance(exprs, list), 'Field <exprs> must be a list.'
+        assert len(exprs) > 0, 'Field <exprs> must have at least one metric'
+        for e in exprs:
+            assert len(e) == 2, \
+                'Tuple must have the (id, expr) format.'
+            assert isinstance(e[0], str), \
+                'Field <id> must be a string.'
+            assert isinstance(e[1], str), \
+                'Field <expr> must be a string.'
+
+        if dsampler:
+            assert 2 <= len(dsampler) <= 3, \
+                'Field <dsampler> must be composed by (interval, aggr) ' \
+                'or (interval, aggr, vpol).'
+            assert isinstance(dsampler[0], str), \
+                'Field <interval> must be a string.'
+            assert dsampler[1] in self.aggregators, \
+                'Field <aggr> is not a valid aggregator.'
         # Setting <time> definitions
         time = {
             'start': start,
-            'aggregator': aggr
+            'aggregator': aggr,
+            'end': end
         }
-        if end:
-            time['end'] = end
+        if dsampler:
+            time['downsampler'] = self.build_downsampler(
+                interval=dsampler[0], aggr=dsampler[1],
+                vpol=dsampler[2] if len(dsampler) == 3 else None)
 
         # Setting <filters> definitions
-        filters = self.generate_filter(tags=tags)
+        filters = {i[0]: self.build_filter(tags=i[1]) for i in metrics}
 
-        # Setting <metric> and <policy> definitions
-        metrics = [{
-            'id': x['id'],
-            'metric': x['name'],
-            'filter': filters['id'] if filters else '',
-            'fillPolicy': 'nan'
-        } for x in metrics]
+        # Setting <metric> definitions
+        q_metrics = []
+        for m in metrics:
+            obj = {
+                'id': self.gen_id(tid="metric", desc=m[0]),
+                'filter': filters[m[0]]['id'],
+                'metric': m[0]
+            }
+            if vpol is not None:
+                obj['fillPolicy'] = self.build_policy(vpol)
+            q_metrics.append(obj)
+
+        filters = filters.values()
+        filters = [i for n, i in enumerate(filters) if i not in filters[n + 1:]]
+
+        assert isinstance(filters, list) and len(filters) > 0, \
+            'Object filter is not valid.'
 
         # Setting <expression> definitions
-        expressions = [{
-            'id': x['id'],
-            'expr': x['expr']
-        } for x in expr]
+        q_exprs = []
+        for e in exprs:
+            m_id = e[1]
+            for i, j in self.ids["metric"].iteritems():
+                m_id = m_id.replace(i, "m%d" % j)
+
+            obj = {
+                'id': e[0],
+                'expr': m_id
+            }
+
+            q_exprs.append(obj)
 
         outputs = [
-            {'id': 'e2', 'alias': 'Mega expression'},
-            {'id': 'a', 'alias': 'Test expression'}
-        ]
+            {
+                'id': e[0],
+                'alias': 'Expression %s' % e[0]
+            } for e in exprs]
 
         # Building the data query
         data = {
            'time': time,
-           'metrics': metrics,
+           'metrics': q_metrics,
            'filters': filters,
-           'expressions': expressions,
+           'expressions': q_exprs,
            'outputs': outputs
         }
 
         # Sending request to OTSDB and capturing HTTP response
         resp = self._post(endpoint="query_exp", data=data)
         return self.process_response(resp)
+
+    def query_summing(self, aggr='sum', start='1d-ago', end='now', vpol=0,
+        metrics=[], dsampler=None):
+        """ Sum all required metrics using query with expressions """
+        assert isinstance(metrics, list), 'Field <metrics> must be a list.'
+        assert len(metrics) > 0, 'Field <metrics> must have at least one metric'
+        for m in metrics:
+            assert len(m) == 2, \
+                'Tuple must have the (metric, tags) format.'
+            assert isinstance(m[0], str), \
+                'Field <metric> must be a string.'
+            assert isinstance(m[1], list), \
+                'Field <tags> must be a list.'
+
+        expr = ""
+        for m in metrics:
+            expr += "%s + " % m[0]
+        expr = expr[:-3]
+
+        expressions = [("sum", expr)]
+        return self.query_expressions(aggr='sum', start=start, end=end, vpol=vpol,
+            metrics=metrics, exprs=expressions, dsampler=dsampler)
 
     def dumps(self, x):
         return tdumps(x, default=str)
