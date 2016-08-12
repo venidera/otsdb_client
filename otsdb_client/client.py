@@ -28,26 +28,24 @@ def ping(host, port):
         info('Ping in '+host+':'+str(port) + " OpenTSDB Server: Ok\n")
         return True
     except socket.error as err:
+        print('ping fail')
         if err.errno == socket.errno.ECONNREFUSED:
-            info('Can\'t connect to OpenTSDB Server')
-            return False
+            raise Exception('Can\'t connect to OpenTSDB Server')
         raise Exception('Fail to test OpenTSDB connection status')
 
 class Connection(object):
-    
     def __init__(self, server='localhost', port=4242):
         self.server = server
         self.port = port
-        
+        ping(server, port)
+
         self.url = 'http://%s:%d' % (server, port)
         self.headers = {'content-type': "application/json"}
         self.aggregators = self.aggregators()
-        
+
         self.ids = {
             "filter": 0, "metric": 0, "expression": 0
         }
-        
-        ping(server, port)
 
     def get_endpoint(self, key=""):
         endpoint = '/api' + {
@@ -66,7 +64,7 @@ class Connection(object):
         return endpoint
 
     def _get(self, endpoint="", params=dict()):
-        r = gr.get(self.url + self.get_endpoint(endpoint), 
+        r = gr.get(self.url + self.get_endpoint(endpoint),
                    params=params)
         gr.map([r])
         return r.response
@@ -74,7 +72,7 @@ class Connection(object):
     def _post(self, endpoint="", data=dict()):
         assert isinstance(data, dict), 'Field <data> must be a dict.'
 
-        r = gr.post(self.url + self.get_endpoint(endpoint), 
+        r = gr.post(self.url + self.get_endpoint(endpoint),
             data=self.dumps(data), headers=self.headers)
         gr.map([r])
 
@@ -266,7 +264,7 @@ class Connection(object):
         assert aggr in self.aggregators, \
             'The aggregator is not valid. Check OTSDB docs for more details.'
 
-        data = {"start": start, "queries" : 
+        data = {"start": start, "queries" :
             [
                 {
                     "aggregator": aggr,
@@ -346,7 +344,7 @@ class Connection(object):
                     "groupBy": group
                 }
             )
-       
+
         return obj
 
     def query_expressions(self, aggr='sum', start='1d-ago', end=None, vpol=0, metrics=[],
@@ -393,7 +391,7 @@ class Connection(object):
         for e in expr:
             assert not ['id', 'expr'] in e.keys(), \
                 'The expression object must have the fields <id> and <expr>'
-        
+
         # Setting <time> definitions
         time = {
             'start': start,
