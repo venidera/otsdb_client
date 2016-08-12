@@ -13,12 +13,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import json
+import grequests as gr
 import time
 import itertools
-import grequests as gr
 from datetime import datetime
 import socket
+
+from json import dumps as tdumps, loads
 from logging import info
 
 def ping(host, port):
@@ -32,59 +33,82 @@ def ping(host, port):
             return False
         raise Exception('Fail to test OpenTSDB connection status')
 
-class OpenTSDBError(Exception):
-    def __init__(self, msg=None):
-        if msg is None:
-            msg = 'Unknown OpenTSDB error occurred. \n %s \n %s'
-        self.msg = msg
-        super(OpenTSDBError, self).__init__(msg)
-
 class Connection(object):
+    
     def __init__(self, server='localhost', port=4242):
         self.server = server
         self.port = port
-        ping(server,port)
+        
+        self.url = 'http://%s:%d' % (server, port)
+        self.headers = {'content-type': "application/json"}
+        self.aggregators = self.aggregators()
+        
+        self.ids = {
+            "filter": 0, "metric": 0, "expression": 0
+        }
+        
+        ping(server, port)
 
-    def get_endpoint(self, key):
-        """ Selects the OTSDB required enpoint. """
-        return {
-            'filters': '/api/config/filters',
-            'query_exp': '/api/query/exp',
-            'aggr': '/api/aggregators',
-            'suggest': '/api/suggest',
-            'version': '/api/version',
-            'put': '/api/put?details',
-            'query': '/api/query',
-            'stats': '/api/stats',
-        }.get(key)
+    def get_endpoint(self, key=""):
+        endpoint = '/api' + {
+            'filters': '/config/filters',
+            'query_exp': '/query/exp',
+            'aggr': '/aggregators',
+            'suggest': '/suggest',
+            'version': '/version',
+            'put': '/put?details',
+            'query': '/query',
+            'stats': '/stats',
+        }.get(str(key))
 
-    def get_url(self):
-        """ Returns the domain of the OTSDB requested URL. """
-        return 'http://' + self.server + ':' + str(self.port)
+        assert endpoint is not '/api', \
+            "Please provide a valid endpoint."
+        return endpoint
 
-    def _make_request(self, endpoint, query=None, process=True):
-        """ Performs HTTP GET requests """
-        print('URL: '+self.get_url() + self.get_endpoint(endpoint))
-        print('params: '+str(query))
-        req = gr.get(self.get_url() + self.get_endpoint(endpoint), params=query)
-        gr.map([req])
-        return self.process_response(req.response) if process else req.response
+    def _get(self, endpoint="", params=dict()):
+        r = gr.get(self.url + self.get_endpoint(endpoint), 
+                   params=params)
+        gr.map([r])
+        return r.response
+
+    def _post(self, endpoint="", data=dict()):
+        assert isinstance(data, dict), 'Field <data> must be a dict.'
+
+        r = gr.post(self.url + self.get_endpoint(endpoint), 
+            data=self.dumps(data), headers=self.headers)
+        gr.map([r])
+
+        return r.response
+
+    def process_response(self, response):
+        status = response.status_code
+
+        if not (200 <= status < 300):
+            info("HTTP error code = %d" % status)
+            return False
+
+        data = loads(response.text)
+        return data if data else None
 
     def filters(self):
         """ Lists the various filters loaded by the TSD """
-        return self._make_request("filters")
+        resp = self._get(endpoint="filters")
+        return self.process_response(resp)
 
     def statistics(self):
         """Get info about what metrics are registered and with what stats."""
-        return self._make_request("stats")
+        resp = self._get(endpoint="stats")
+        return self.process_response(resp)
 
     def aggregators(self):
         """Used to get the list of default aggregation functions. """
-        return self._make_request("aggr")
+        resp = self._get(endpoint="aggr")
+        return self.process_response(resp)
 
     def version(self):
         """Used to check OpenTSDB version. """
-        return self._make_request("version")
+        resp = self._get(endpoint="version")
+        return self.process_response(resp)
 
     def suggest(self, t='metrics', q='', m=9999):
         """ Matches the string in the query on the first chars of the stored data.
@@ -101,8 +125,9 @@ class Connection(object):
             The maximum number of suggested results. Must be greater than 0.
 
         """
-        query = {'type': t, 'q': q, 'max': m}
-        return self._make_request("suggest", query)
+        params = {'type': t, 'q': q, 'max': m}
+        resp = self._get(endpoint="suggest", params=params)
+        return self.process_response(resp)
 
     def put(self, metric=None, timestamps=[], values=[], tags=dict(),
         details=True, verbose=True, ptcl=20, att=5):
@@ -169,13 +194,13 @@ class Connection(object):
 
             if ptc == ptcl:
                 ptc = 0
-                pts.append(gr.post(self.get_url() + self.get_endpoint("put") +
-                '?summary=true&details=true', data=json.dumps(ptl)))
+                pts.append(gr.post(self.url + self.get_endpoint("put") +
+                '?summary=true&details=true', data=self.dumps(ptl)))
                 ptl = list()
 
         if ptl:
-            pts.append(gr.post(self.get_url() + self.get_endpoint("put") +
-                '?summary=true&details=true', data=json.dumps(ptl)))
+            pts.append(gr.post(self.url + self.get_endpoint("put") +
+                '?summary=true&details=true', data=self.dumps(ptl)))
 
         attempts = 0
         fails = 1
@@ -188,12 +213,12 @@ class Connection(object):
 
             pts = [x for x in pts if not 200 <= x.response.status_code <= 300]
             attempts += 1
-            fails = sum(len(x) for x in pts)
+            fails = len([x for x in pts])
 
         if verbose:
             total = len(values)
             print("%d of %d (%.2f%%) requests were successfully sent" \
-                % (total - fails, total, 100 * round((total - fails)/total, 2)))
+                % (total - fails, total, 100 * round(float((total - fails))/total, 2)))
 
         return {
             'points': len(values),
@@ -237,22 +262,32 @@ class Connection(object):
         'union': boolean, optional (default=False)
             Returns the points of the time series (i.e. metric + tags) in one list
         """
-        assert aggr in self.aggregators(), \
+        assert isinstance(metric, str), 'Field <metric> must be a string.'
+        assert aggr in self.aggregators, \
             'The aggregator is not valid. Check OTSDB docs for more details.'
 
-        query = {'m': '%s:%s' % (aggr, metric), 'start': start, \
-                 'show_summary': show_summary, 'tags': tags}
-        if end:
-            query['end'] = end
+        data = {"start": start, "queries" : 
+            [
+                {
+                    "aggregator": aggr,
+                    "metric": metric,
+                    "tags": tags,
+                    'show_summary': show_summary
+                }
+            ]
+        }
 
-        response = self._make_request("query", query, False)
-        if 200 <= response.status_code <= 300:
+        if end:
+            data['end'] = end
+        resp = self._post(endpoint="query", data=data)
+
+        if 200 <= resp.status_code <= 300:
             result = None
             if show_json:
                 # Raw response
-                result = response.text
+                result = resp.text
             else:
-                data = json.loads(response.text)
+                data = loads(resp.text)
                 if union:
                     dpss = dict()
                     for x in data:
@@ -291,74 +326,31 @@ class Connection(object):
             print('No results found')
             return []
 
-    def hquery_exp(self, aggr='sum', start='1d-ago', end=None, vpol=0, metrics=[],
-        expr={}):
-        """ Allows for querying data using expressions.
+    def generate_id(self, tid=""):
+        assert tid in self.ids.keys(), "Field <tip> is not valid."
 
-        Parameters
-        ----------
-        'aggr' : string, required (default=sum)
-            The global aggregation function to use for all metrics. It may be
-            overridden on a per metric basis.
+        self.ids[tid] += 1
+        return "%s%d" % (tid[:1], self.ids[tid])
 
-        'start' : string, required (default=1h-ago)
-            The start time for the query. This may be relative, absolute human
-            readable or absolute Unix Epoch.
+    def generate_filter(self, tags=[], group=False):
+        assert len(tags) > 0 and isinstance(tags, list), \
+            'Field <tags> is not valid.'
 
-        'end' : string, optional (default=current time)
-            The end time for the query. If left out, the end is now
+        obj = {"id" : self.generate_id("filter"), "tags" : []}
+        for t in tags:
+            obj["tags"].append(
+                {
+                    "type": "wildcard",
+                    "tagk": t,
+                    "filter": "*",
+                    "groupBy": group
+                }
+            )
+       
+        return obj
 
-        'vpol': (int, long, float), required (default=0)
-            The value used to replace "missing" values, i.e. when a data point was
-            expected but couldn't be found in storage.
-
-        'metrics': array of dict, required (default=[])
-            Determines which metrics are included in the expression.
-
-        'expr': dict, required (default=[])
-            A dictionary with one or more expressions over the metrics.
-        """
-
-        # Checking for data consistency
-        assert isinstance(metrics, list), 'Field <metrics> must be a list.'
-        assert len(metrics) >= 1, 'Field <metrics> must have at least one element'
-        for m in metrics:
-            assert not ['id', 'name', 'tags'] in m.keys(), \
-                'The metric object must have the fields <id>, <name> and <tags>'
-            assert len(m['tags']) >= 1, \
-                'The field <metric.tags> must have at least one element'
-
-        assert aggr in self.aggregators(), \
-            'The aggregator is not valid. Check OTSDB docs for more details.'
-
-        assert isinstance(expr, dict), 'Field <expr> must be a dictionary.'
-        assert len(expr) >= 1, 'The field <expr> must have at least one element'
-
-        res = []
-        for a, b in itertools.combinations(reversed(sorted(expr.iteritems())), 2):
-            expr[a[0]] = expr[a[0]].replace(b[0], "(%s)" % b[1])
-
-        for n, metric in enumerate(metrics):
-
-            for key in expr:
-                expr[key] = expr[key].replace(metric['id'], 'res[%d]' % n)
-
-            # Requesting from query endpoint
-            response = self.query(metric=metric['name'], aggr=aggr,
-                tags=metric['tags'], start=start, end=end, nots=True, union=True)
-
-            res.append(response['results']['values'])
-
-        m = max(len(x) for x in res)
-        res = [ x + ([vpol] * (m - len(x))) for x in res]
-
-        return dict([(key, eval(expr[key]).tolist()) for key in sorted(expr)])
-
-    def define_filter(self,tagk=''):
-        return dict()
-
-    def query_exp(self, aggr='sum', start='1d-ago', end=None, vpol=0, metrics=[],
-        expr=[], show_json=True):
+    def query_expressions(self, aggr='sum', start='1d-ago', end=None, vpol=0, metrics=[],
+        tags=[], expr=[], show_json=True):
         """ Enables extracting data from the storage system
 
         Parameters
@@ -392,55 +384,58 @@ class Connection(object):
         for m in metrics:
             assert not ['id', 'name'] in m.keys(), \
                 'The metric object must have the fields <id> and <name>'
-        assert aggr in self.aggregators(), \
+        assert len(tags) > 0 and isinstance(tags, list), \
+            'Field <tags> is not valid.'
+        assert aggr in self.aggregators, \
             'The aggregator is not valid. Check OTSDB docs for more details.'
         assert isinstance(expr, list), 'Field <expr> must be a list.'
-        assert len(expr) >= 1, 'Field <expr> must have at least one expression'
+        assert len(expr) > 0, 'Field <expr> must have at least one expression'
         for e in expr:
             assert not ['id', 'expr'] in e.keys(), \
                 'The expression object must have the fields <id> and <expr>'
+        
         # Setting <time> definitions
         time = {
             'start': start,
-            'end': end,
             'aggregator': aggr
         }
+        if end:
+            time['end'] = end
+
+        # Setting <filters> definitions
+        filters = self.generate_filter(tags=tags)
+
         # Setting <metric> and <policy> definitions
         metrics = [{
             'id': x['id'],
             'metric': x['name'],
-            'fillPolicy': {
-                'policy': 'scalar',
-                'value': vpol
-            }
+            'filter': filters['id'] if filters else '',
+            'fillPolicy': 'nan'
         } for x in metrics]
+
         # Setting <expression> definitions
         expressions = [{
             'id': x['id'],
             'expr': x['expr']
         } for x in expr]
+
+        outputs = [
+            {'id': 'e2', 'alias': 'Mega expression'},
+            {'id': 'a', 'alias': 'Test expression'}
+        ]
+
         # Building the data query
-        query = {
+        data = {
            'time': time,
            'metrics': metrics,
-           'expressions': expressions
+           'filters': filters,
+           'expressions': expressions,
+           'outputs': outputs
         }
-        # Sending request to OTSDB and capturing HTTP response
-        response = self._make_request("query_exp", query, False)
-        if 200 <= response.status_code <= 300:
-            print(json.loads(response.text) if show_json else response.text)
-        else:
-            # Esta dando erro 500 aqui
-            print(response.text)
-            print('No results found')
-            return []
 
-    @staticmethod
-    def process_response(resp):
-        try:
-            res = json.loads(resp.text)
-        except Exception:
-            raise OpenTSDBError(resp.text)
-        if 'error' in res:
-            raise OpenTSDBError(res['error'])
-        return res
+        # Sending request to OTSDB and capturing HTTP response
+        resp = self._post(endpoint="query_exp", data=data)
+        return self.process_response(resp)
+
+    def dumps(self, x):
+        return tdumps(x, default=str)
