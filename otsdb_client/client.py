@@ -257,10 +257,11 @@ class Connection(object):
             Returns the points of the time series (i.e. metric + tags) in one list
         """
         assert isinstance(queries, list), 'Field <queries> must be a list.'
+        assert len(queries) > 0, 'Field <queries> must have at least one query'
         for q in queries:
-            assert isinstance(q, dict), 'Field <query> must be a dict.'
+            assert isinstance(q, dict), 'Field <element> must be a dict.'
             assert all(i in q.keys() for i in ['m', 'aggr', 'tags']), \
-                'Not all required query keys were informed.'
+                'Not all required elements were informed.'
             assert isinstance(q['m'], str), \
                 'Field <metric> must be a string.'
             assert q['aggr'] in self.aggregators, \
@@ -363,25 +364,25 @@ class Connection(object):
             ret['fillPolicy'] = self.build_policy(vpol)
         return ret
 
-    def build_filter(self, tags=[], group=True):
-        assert len(tags) > 0 and isinstance(tags, list), \
+    def build_filter(self, tags={}, group=True):
+        assert len(tags) > 0 and isinstance(tags, dict), \
             'Field <tags> is not valid.'
 
         obj = {"id" : self.gen_id("filter", self.dumps(tags)), "tags" : []}
         for t in tags:
             obj["tags"].append(
                 {
-                    "type": "wildcard",
+                    "type": "literal_or",
                     "tagk": t,
-                    "filter": "*",
+                    "filter": tags[t],
                     "groupBy": group
                 }
             )
 
         return obj
 
-    def query_expressions(self, aggr='sum', start='1d-ago', end='now', vpol=0,
-        metrics=[], exprs=[], dsampler=None):
+    def query_expressions(self, aggr='sum', start='1d-ago', end='now', vpol="nan",
+        metrics=[], exprs=[], dsampler=None, forceAggregate=False):
         """ Allows for querying data using expressions.
 
         Parameters
@@ -407,6 +408,9 @@ class Connection(object):
 
         'dsampler': tuple of three elements, optional (default=None)
             Reduces the number of data points returned, given an interval
+
+        'forceAggregate': boolean, optional (default=false)
+            Forces the aggregation of metrics with the same name
         """
         assert aggr in self.aggregators, \
             'The aggregator is not valid. Check OTSDB docs for more details.'
@@ -416,14 +420,15 @@ class Connection(object):
             'Field <vpol> is not valid.'
 
         assert isinstance(metrics, list), 'Field <metrics> must be a list.'
-        assert len(metrics) > 0, 'Field <metrics> must have at least one metric'
+        assert len(metrics) > 0, 'Field <metrics> must have at least one element'
         for m in metrics:
-            assert len(m) == 2, \
-                'Tuple must have the (metric, tags) format.'
-            assert isinstance(m[0], str), \
-                'Field <metric> must be a string.'
-            assert isinstance(m[1], list), \
-                'Field <tags> must be a list.'
+            assert isinstance(m, dict), 'Field <element> must be a dict.'
+            assert all(i in m.keys() for i in ['m', 'tags']), \
+                'Not all required element keys were informed.'
+            assert isinstance(m['m'], str), \
+                'Field <metric> must be a string.'  
+            assert isinstance(m['tags'], dict), \
+                'Field <tags> must be a dict'
 
         assert isinstance(exprs, list), 'Field <exprs> must be a list.'
         assert len(exprs) > 0, 'Field <exprs> must have at least one metric'
@@ -455,15 +460,15 @@ class Connection(object):
                 vpol=dsampler[2] if len(dsampler) == 3 else None)
 
         # Setting <filters> definitions
-        filters = {i[0]: self.build_filter(tags=i[1]) for i in metrics}
+        filters = {self.dumps(i): self.build_filter(tags=i['tags']) for i in metrics}
 
         # Setting <metric> definitions
         q_metrics = []
         for m in metrics:
             obj = {
-                'id': self.gen_id(tid="metric", desc=m[0]),
-                'filter': filters[m[0]]['id'],
-                'metric': m[0]
+                'id': self.gen_id(tid="metric", desc=self.dumps(m)),
+                'filter': filters[self.dumps(m)]['id'],
+                'metric': m['m']
             }
             if vpol is not None:
                 obj['fillPolicy'] = self.build_policy(vpol)
@@ -506,29 +511,44 @@ class Connection(object):
 
         # Sending request to OTSDB and capturing HTTP response
         resp = self._post(endpoint="query_exp", data=data)
-        return self.process_response(resp)
+        res = self.process_response(resp)
 
-    def query_summing(self, aggr='sum', start='1d-ago', end='now', vpol=0,
+        if forceAggregate == True:
+            for i in range(len(res["outputs"])):
+                # Forcing the aggregation
+                dps = res["outputs"][i]["dps"]
+                new_dps = []
+                for dp in dps:
+                    if len(dp) > 2:
+                        new_dps.append([dp[0], sum(dp[1:])])
+                res["outputs"][i]["dps"] = new_dps
+                res["outputs"][i]["dpsMeta"]["series"] = 1
+                res["outputs"][i]["meta"] = []
+        return res
+
+    def query_summing(self, aggr='sum', start='1d-ago', end='now', vpol="nan",
         metrics=[], dsampler=None):
         """ Sum all required metrics using query with expressions """
         assert isinstance(metrics, list), 'Field <metrics> must be a list.'
-        assert len(metrics) > 0, 'Field <metrics> must have at least one metric'
+        assert len(metrics) > 0, 'Field <metrics> must have at least one element'
         for m in metrics:
-            assert len(m) == 2, \
-                'Tuple must have the (metric, tags) format.'
-            assert isinstance(m[0], str), \
-                'Field <metric> must be a string.'
-            assert isinstance(m[1], list), \
-                'Field <tags> must be a list.'
+            assert isinstance(m, dict), 'Field <element> must be a dict.'
+            assert all(i in m.keys() for i in ['m', 'tags']), \
+                'Not all required element keys were informed.'
+            assert isinstance(m['m'], str), \
+                'Field <metric> must be a string.'  
+            assert isinstance(m['tags'], dict), \
+                'Field <tags> must be a dict'
 
         expr = ""
+
         for m in metrics:
-            expr += "%s + " % m[0]
+            expr += "%s + " % self.dumps(m)
         expr = expr[:-3]
 
         expressions = [("sum", expr)]
         return self.query_expressions(aggr='sum', start=start, end=end, vpol=vpol,
-            metrics=metrics, exprs=expressions, dsampler=dsampler)
+            metrics=metrics, exprs=expressions, dsampler=dsampler, forceAggregate=True)
 
     def dumps(self, x):
         return tdumps(x, default=str)
