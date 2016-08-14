@@ -271,9 +271,6 @@ class Connection(object):
                 assert isinstance(q['rate'], bool), \
                     'Field <rate> must be True or False'
 
-        #assert aggr in self.aggregators, \
-        #    'The aggregator is not valid. Check OTSDB docs for more details.'
-
         data = {"start": start, "end": end, "queries": 
             [{
                 "aggregator": q['aggr'],
@@ -284,7 +281,6 @@ class Connection(object):
             } for q in queries]
         }
 
-        print(data)
         resp = self._post(endpoint="query", data=data)
 
         if 200 <= resp.status_code <= 300:
