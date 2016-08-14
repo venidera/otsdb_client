@@ -220,8 +220,8 @@ class Connection(object):
             'failed': fails
         }
 
-    def query(self, metric, aggr='sum', tags=dict(), start='1h-ago', end=None,
-        show_summary=False, show_json=False, nots=False, tsd=True, union=False):
+    def query(self, queries=[], start='1h-ago', end='now', show_summary=False, 
+        show_json=False, nots=False, tsd=True, union=False):
         """ Enables extracting data from the storage system
 
         Parameters
@@ -256,23 +256,35 @@ class Connection(object):
         'union': boolean, optional (default=False)
             Returns the points of the time series (i.e. metric + tags) in one list
         """
-        assert isinstance(metric, str), 'Field <metric> must be a string.'
-        assert aggr in self.aggregators, \
-            'The aggregator is not valid. Check OTSDB docs for more details.'
+        assert isinstance(queries, list), 'Field <queries> must be a list.'
+        for q in queries:
+            assert isinstance(q, dict), 'Field <query> must be a dict.'
+            assert all(i in q.keys() for i in ['m', 'aggr', 'tags']), \
+                'Not all required query keys were informed.'
+            assert isinstance(q['m'], str), \
+                'Field <metric> must be a string.'
+            assert q['aggr'] in self.aggregators, \
+                'The aggregator is not valid.'       
+            assert isinstance(q['tags'], dict), \
+                'Field <tags> must be a dict'
+            if 'rate' in q.keys():
+                assert isinstance(q['rate'], bool), \
+                    'Field <rate> must be True or False'
 
-        data = {"start": start, "queries" :
-            [
-                {
-                    "aggregator": aggr,
-                    "metric": metric,
-                    "tags": tags,
-                    'show_summary': show_summary
-                }
-            ]
+        #assert aggr in self.aggregators, \
+        #    'The aggregator is not valid. Check OTSDB docs for more details.'
+
+        data = {"start": start, "end": end, "queries": 
+            [{
+                "aggregator": q['aggr'],
+                "metric": q['m'],
+                "tags": q['tags'],
+                "rate": q['rate'] if 'rate' in q.keys() else False,
+                'show_summary': show_summary
+            } for q in queries]
         }
 
-        if end:
-            data['end'] = end
+        print(data)
         resp = self._post(endpoint="query", data=data)
 
         if 200 <= resp.status_code <= 300:
@@ -355,7 +367,7 @@ class Connection(object):
             ret['fillPolicy'] = self.build_policy(vpol)
         return ret
 
-    def build_filter(self, tags=[], group=False):
+    def build_filter(self, tags=[], group=True):
         assert len(tags) > 0 and isinstance(tags, list), \
             'Field <tags> is not valid.'
 
