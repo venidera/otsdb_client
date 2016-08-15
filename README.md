@@ -16,7 +16,7 @@ This package was made and tested with Python 2.7 and 3.5.
 * [Installation](#installation)
 * [Development and Tests](#developmentandtests)
 * [To-do list](#todolist)
-* [How to use](#howtouse)
+* [Documentation](#documentation)
 * [Maintainers](#maintainers)
 * [License](#license)
 
@@ -69,35 +69,12 @@ All files created inside the `tests` directory must be kept untracked in the rep
 * Implement the reading with chunks: pending;
 * Cover all endpoints listed in the [OpenTSDB HTTP API doc](http://opentsdb.net/docs/build/html/api_http/index.html).
 
-## How to use
+## Documentation
 
-```python
->>> from otsdb_client import Connection
->>> c = Connection(server='localhost', port=4242)
->>> c.put(metric='test_put',timestamps=[int(mktime(datetime.now().timetuple()))],values=[2000.00],tags={'tagk':'tagv'})
+### Connection class
 
->>> c.query(metric='test_put',aggr='sum',tags={'test':'*'},start='1h-ago')
-{'results': [{'metric': u'test_put', 'values': [2000.0], 'ts': [datetime.datetime(2016, 2, 4, 0, 28, 19)], 'tags': {u'test': u'client', u'type': u'telnet'}}]}
->>> c.query(metric='test_put',aggr='sum',tags={'test':'*'},start='1h-ago',union=True)
-{'results': {'values': [2000.0], 'ts': [datetime.datetime(2016, 2, 4, 0, 28, 19)]}}
-```
-
-### Methods
-
-The following OpenTSDB related methods are currently implemented at `otsdb_client/rest/client.py`:
-
-* `version()` from **[/api/version](http://opentsdb.net/docs/build/html/api_http/version.html)**
-* `filters()` from **[/api/config/filters](http://opentsdb.net/docs/build/html/api_http/config/filters.html)**
-* `statistics()` from **[/api/stats](http://opentsdb.net/docs/build/html/api_http/stats.html)**
-* `aggregators()` from **[/api/aggregators](http://opentsdb.net/docs/build/html/api_http/aggregators.html)**
-* `put()` from **[/api/put](http://opentsdb.net/docs/build/html/api_http/put.html)**
-* `suggest()` from **[/api/suggest](http://opentsdb.net/docs/build/html/api_http/suggest.html)**
-* `query()` from **[/api/query](http://opentsdb.net/docs/build/html/api_http/query.html)**
-* `query_exp()` from **[/api/query/exp](http://opentsdb.net/docs/build/html/api_http/query/exp.html)**
-
-#### Class instantiation (`__init__`):
-
-Create objects of otsdb_client to execute read/write operations with OpenTSDB:
+Create objects of otsdb_client to execute read/write operations with OpenTSDB.
+The `__init__` method will ping the server port and will cause an exception if it fails.
 
 ```python
 class Connection(object):
@@ -115,6 +92,79 @@ Arguments:
 >>> from otsdb_client import Connection
 >>> c = Connection()
 ```
+
+
+### How to use
+
+```python
+>>> from otsdb_client import Connection
+>>> c = Connection(server='localhost', port=4242)
+>>> c.put(metric='test_put',timestamps=[int(mktime(datetime.now().timetuple()))],values=[2000.00],tags={'tagk':'tagv'})
+
+>>> c.query(metric='test_put',aggr='sum',tags={'test':'*'},start='1h-ago')
+{'results': [{'metric': u'test_put', 'values': [2000.0], 'ts': [datetime.datetime(2016, 2, 4, 0, 28, 19)], 'tags': {u'test': u'client', u'type': u'telnet'}}]}
+>>> c.query(metric='test_put',aggr='sum',tags={'test':'*'},start='1h-ago',union=True)
+{'results': {'values': [2000.0], 'ts': [datetime.datetime(2016, 2, 4, 0, 28, 19)]}}
+```
+
+### Methods (API Endpoints Covered)
+
+The following [OpenTSDB HTTP API](http://opentsdb.net/docs/build/html/api_http/index.html) endpoints listed below can be consumed using this package:
+
+#### `version()`
+
+Endpoint **[/api/version](http://opentsdb.net/docs/build/html/api_http/version.html)**
+
+```python
+>>> from otsdb_client import Connection
+>>> c = Connection(server='192.168.30.80')
+>>> c.version()
+{'branch': 'next', 'version': '2.3.0-RC1', 'user': 'hobbes', 'repo': '/home/hobbes/opentsdb_OFFICIAL/build', 'short_revision': '306603c', 'full_revision': '306603c313fda191706479e7cc78a931f36ae89b', 'repo_status': 'MINT', 'host': 'clhbase', 'timestamp': '1462215755'}
+>>>
+```
+
+#### `filters()`
+
+Endpoint **[/api/config/filters](http://opentsdb.net/docs/build/html/api_http/config/filters.html)**
+
+#### `statistics()`
+
+Endpoint **[/api/stats](http://opentsdb.net/docs/build/html/api_http/stats.html)**
+
+#### `aggregators()`
+
+Endpoint **[/api/aggregators](http://opentsdb.net/docs/build/html/api_http/aggregators.html)**
+
+#### `put()`
+
+Endpoint **[/api/put](http://opentsdb.net/docs/build/html/api_http/put.html)**
+
+#### `suggest()`
+
+Endpoint **[/api/suggest](http://opentsdb.net/docs/build/html/api_http/suggest.html)**
+
+Test:
+
+```python
+>>> from otsdb_client import Connection
+>>> c = Connection('192.168.30.80')
+>>> c.suggest(type='metrics',q='',max='10')
+['test_put', 'test_put1', 'test_put2']
+>>> c.suggest(type='tagk',q='',max='10')
+['key', 'tagk']
+>>> c.suggest(type='tagv',q='',max='10')
+['0', '1', 'tagv']
+```
+
+#### `query()`
+
+Endpoint **[/api/query](http://opentsdb.net/docs/build/html/api_http/query.html)**
+
+#### `query_exp()`
+
+Endpoint **[/api/query/exp](http://opentsdb.net/docs/build/html/api_http/query/exp.html)**
+
+
 ### Write data to OpenTSDB (`put`):
 
 Insert a point (timestamp+value) into a Time Serie (Metric + Tags). At this moment, only one point can be added per call.
@@ -181,25 +231,6 @@ Query a metric for values of all its tags since 1 day ago:
 
 ```python
 results = c.query(metric='metric_name',aggr='sum',tags={'tagn':'*'},start='1d-ago')
-```
-
-## HTTP API Endpoints Example
-
-### /api/suggest
-
-Documentation for the [`/api/suggest`](http://opentsdb.net/docs/build/html/api_http/suggest.html)
-
-Test:
-
-```python
->>> from otsdb_client import Connection
->>> c = Connection('192.168.30.80')
->>> c.suggest(type='metrics',q='',max='10')
-['test_put', 'test_put1', 'test_put2']
->>> c.suggest(type='tagk',q='',max='10')
-['key', 'tagk']
->>> c.suggest(type='tagv',q='',max='10')
-['0', '1', 'tagv']
 ```
 
 ## Maintainers
