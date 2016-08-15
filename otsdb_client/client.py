@@ -28,7 +28,6 @@ def ping(host, port):
         info('Ping in '+host+':'+str(port) + " OpenTSDB Server: Ok\n")
         return True
     except socket.error as err:
-        print('ping fail')
         if err.errno == socket.errno.ECONNREFUSED:
             raise Exception('Can\'t connect to OpenTSDB Server')
         raise Exception('Fail to test OpenTSDB connection status')
