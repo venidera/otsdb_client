@@ -185,10 +185,12 @@ results = c.query(metric='metric_name',aggr='sum',tags={'tagn':'*'},start='1d-ag
 
 ## HTTP API Endpoints Example
 
-### [/api/suggest]
+### /api/suggest
 
 Documentation for the [`/api/suggest`](http://opentsdb.net/docs/build/html/api_http/suggest.html)
+
 Test:
+
 ```python
 >>> from otsdb_client import Connection
 >>> c = Connection('192.168.30.80')
