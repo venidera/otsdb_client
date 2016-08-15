@@ -129,7 +129,7 @@ Endpoint **[/api/stats](http://opentsdb.net/docs/build/html/api_http/stats.html)
 >>> from otsdb_client import Connection
 >>> c = Connection(server='192.168.30.80')
 >>> c.statistics()
-[{'metric': 'tsd.connectionmgr.connections', 'timestamp': 1471268960, 'tags': {'type': 'open', 'host': 'barrel-server'}, 'value': '1'}, {'metric': 'tsd.connectionmgr.connections', 'timestamp': 1471268960, 'tags': {'type': 'rejected', 'host': 'barrel-server'}, 'value': '0'},...]
+[{'metric': 'tsd.connectionmgr.connections', 'timestamp': 1471268960, 'tags': {'type': 'open', 'host': 'opentsdb-server'}, 'value': '1'}, {'metric': 'tsd.connectionmgr.connections', 'timestamp': 1471268960, 'tags': {'type': 'rejected', 'host': 'opentsdb-server'}, 'value': '0'},...]
 >>>
 ```
 
