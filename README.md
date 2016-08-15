@@ -183,6 +183,23 @@ Query a metric for values of all its tags since 1 day ago:
 results = c.query(metric='metric_name',aggr='sum',tags={'tagn':'*'},start='1d-ago')
 ```
 
+## HTTP API Endpoints Example
+
+### [/api/suggest]
+
+Documentation for the [`/api/suggest`](http://opentsdb.net/docs/build/html/api_http/suggest.html)
+Test:
+```python
+>>> from otsdb_client import Connection
+>>> c = Connection('192.168.30.80')
+>>> c.suggest(type='metrics',q='',max='10')
+['test_put', 'test_put1', 'test_put2']
+>>> c.suggest(type='tagk',q='',max='10')
+['key', 'tagk']
+>>> c.suggest(type='tagv',q='',max='10')
+['0', '1', 'tagv']
+```
+
 ## Maintainers
 
 Venidera's development team:

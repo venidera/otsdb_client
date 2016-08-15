@@ -104,23 +104,22 @@ class Connection(object):
         resp = self._get(endpoint="version")
         return self.process_response(resp)
 
-    def suggest(self, t='metrics', q='', m=9999):
+    def suggest(self, type='metrics', q='', max=9999):
         """ Matches the string in the query on the first chars of the stored data.
 
         Parameters
         ----------
-        't' : string (default='metrics')
+        'type' : string (default='metrics')
             The type of data. Must be one of the following: metrics, tagk or tagv.
 
         'q' : string, optional (default='')
             A string to match on for the given type.
 
-        'm' : int, optional (default=9999)
+        'max' : int, optional (default=9999)
             The maximum number of suggested results. Must be greater than 0.
 
         """
-        params = {'type': t, 'q': q, 'max': m}
-        resp = self._get(endpoint="suggest", params=params)
+        resp = self._get(endpoint="suggest", params={'type': type, 'q': q, 'max': max})
         return self.process_response(resp)
 
     def put(self, metric=None, timestamps=[], values=[], tags=dict(),
@@ -220,8 +219,8 @@ class Connection(object):
             'failed': fails
         }
 
-    def query(self, queries=[], start='1h-ago', end='now', show_summary=False, 
-        show_json=False, nots=False, tsd=True, union=False):
+    def query(self, queries=[], start='1h-ago', end='now', show_summary=False,
+        show_json=False, nots=False, tsd=True, group=False):
         """ Enables extracting data from the storage system
 
         Parameters
@@ -253,8 +252,8 @@ class Connection(object):
         'tsd': boolean, optional (default=True)
             Set timestamp as datetime object instead of an integer
 
-        'union': boolean, optional (default=False)
-            Returns the points of the time series (i.e. metric + tags) in one list
+        'group': boolean, optional (default=False)
+            Returns the points of the time series grouped (i.e. metric + tags) in one list
         """
         assert isinstance(queries, list), 'Field <queries> must be a list.'
         assert len(queries) > 0, 'Field <queries> must have at least one query'
@@ -265,14 +264,14 @@ class Connection(object):
             assert isinstance(q['m'], str), \
                 'Field <metric> must be a string.'
             assert q['aggr'] in self.aggregators, \
-                'The aggregator is not valid.'       
+                'The aggregator is not valid.'
             assert isinstance(q['tags'], dict), \
                 'Field <tags> must be a dict'
             if 'rate' in q.keys():
                 assert isinstance(q['rate'], bool), \
                     'Field <rate> must be True or False'
 
-        data = {"start": start, "end": end, "queries": 
+        data = {"start": start, "end": end, "queries":
             [{
                 "aggregator": q['aggr'],
                 "metric": q['m'],
@@ -291,12 +290,15 @@ class Connection(object):
                 result = resp.text
             else:
                 data = loads(resp.text)
-                if union:
+                if group:
                     dpss = dict()
                     for x in data:
                         if 'metric' in x.keys():
-                            for k,v in x['dps'].iteritems():
-                                dpss[k] = v
+                            for k,v in x['dps'].items():
+                                if k in dpss.keys():
+                                    dpss[k] += v
+                                else:
+                                    dpss[k] = v
                     points = sorted(dpss.items())
                     if not nots:
                         result = {'results':{'timestamps':[],'values':[]}}
@@ -426,7 +428,7 @@ class Connection(object):
             assert all(i in m.keys() for i in ['m', 'tags']), \
                 'Not all required element keys were informed.'
             assert isinstance(m['m'], str), \
-                'Field <metric> must be a string.'  
+                'Field <metric> must be a string.'
             assert isinstance(m['tags'], dict), \
                 'Field <tags> must be a dict'
 
@@ -536,7 +538,7 @@ class Connection(object):
             assert all(i in m.keys() for i in ['m', 'tags']), \
                 'Not all required element keys were informed.'
             assert isinstance(m['m'], str), \
-                'Field <metric> must be a string.'  
+                'Field <metric> must be a string.'
             assert isinstance(m['tags'], dict), \
                 'Field <tags> must be a dict'
 
