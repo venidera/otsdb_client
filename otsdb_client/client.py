@@ -25,7 +25,7 @@ from logging import info
 def ping(host, port):
     try:
         socket.socket().connect((host, port))
-        info('Ping in '+host+':'+str(port) + " OpenTSDB Server: Ok\n")
+        info('Ping in '+host+':'+str(port) + " OpenTSDB Server: Ok")
         return True
     except socket.error as err:
         if err.errno == socket.errno.ECONNREFUSED:
