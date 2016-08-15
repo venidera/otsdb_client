@@ -93,20 +93,6 @@ Arguments:
 >>> c = Connection()
 ```
 
-
-### How to use
-
-```python
->>> from otsdb_client import Connection
->>> c = Connection(server='localhost', port=4242)
->>> c.put(metric='test_put',timestamps=[int(mktime(datetime.now().timetuple()))],values=[2000.00],tags={'tagk':'tagv'})
-
->>> c.query(metric='test_put',aggr='sum',tags={'test':'*'},start='1h-ago')
-{'results': [{'metric': u'test_put', 'values': [2000.0], 'ts': [datetime.datetime(2016, 2, 4, 0, 28, 19)], 'tags': {u'test': u'client', u'type': u'telnet'}}]}
->>> c.query(metric='test_put',aggr='sum',tags={'test':'*'},start='1h-ago',union=True)
-{'results': {'values': [2000.0], 'ts': [datetime.datetime(2016, 2, 4, 0, 28, 19)]}}
-```
-
 ### Methods (API Endpoints Covered)
 
 The following [OpenTSDB HTTP API](http://opentsdb.net/docs/build/html/api_http/index.html) endpoints listed below can be consumed using this package:
@@ -127,27 +113,51 @@ Endpoint **[/api/version](http://opentsdb.net/docs/build/html/api_http/version.h
 
 Endpoint **[/api/config/filters](http://opentsdb.net/docs/build/html/api_http/config/filters.html)**
 
+```python
+>>> from otsdb_client import Connection
+>>> c = Connection(server='192.168.30.80')
+>>> c.filters()
+{'iwildcard': {'description': 'Performs ...'}, 'not_literal_or': {'description': 'Accepts ...'}, 'regexp': {'description': 'Provides full...'}, 'wildcard': {'description': 'Performs pre, post and in-fix ...'}, 'literal_or': {'description': 'Accepts one or ...'}, 'not_iliteral_or': {'description': 'Accepts one or more ...'}, 'iliteral_or': {'description': 'Accepts one ...'}}
+>>>
+```
+
 #### `statistics()`
 
 Endpoint **[/api/stats](http://opentsdb.net/docs/build/html/api_http/stats.html)**
 
-#### `aggregators()`
+```python
+>>> from otsdb_client import Connection
+>>> c = Connection(server='192.168.30.80')
+>>> c.statistics()
+[{'metric': 'tsd.connectionmgr.connections', 'timestamp': 1471268960, 'tags': {'type': 'open', 'host': 'barrel-server'}, 'value': '1'}, {'metric': 'tsd.connectionmgr.connections', 'timestamp': 1471268960, 'tags': {'type': 'rejected', 'host': 'barrel-server'}, 'value': '0'},...]
+>>>
+```
+
+#### `aggregators`
+
+It's a `list()` created in the `__init__` method. It contains the aggregators returned by the endpoint `aggregators`.
 
 Endpoint **[/api/aggregators](http://opentsdb.net/docs/build/html/api_http/aggregators.html)**
+
+```python
+>>> from otsdb_client import Connection
+>>> c = Connection(server='192.168.30.80')
+>>> c.aggregators
+['mult', 'p90', 'zimsum', 'mimmax', 'sum', 'p50', 'none', 'p95', 'ep99r7', 'p75', 'p99', 'ep99r3', 'ep95r7', 'min', 'avg', 'ep75r7', 'dev', 'ep95r3', 'ep75r3', 'ep50r7', 'ep90r7', 'mimmin', 'p999', 'ep50r3', 'ep90r3', 'ep999r7', 'last', 'max', 'count', 'ep999r3', 'first']
+>>>
+```
 
 #### `put()`
 
 Endpoint **[/api/put](http://opentsdb.net/docs/build/html/api_http/put.html)**
 
-#### `suggest()`
+#### `suggest(type='metrics',q='',max=9999)`
 
 Endpoint **[/api/suggest](http://opentsdb.net/docs/build/html/api_http/suggest.html)**
 
-Test:
-
 ```python
 >>> from otsdb_client import Connection
->>> c = Connection('192.168.30.80')
+>>> c = Connection(server='192.168.30.80')
 >>> c.suggest(type='metrics',q='',max='10')
 ['test_put', 'test_put1', 'test_put2']
 >>> c.suggest(type='tagk',q='',max='10')
@@ -232,6 +242,21 @@ Query a metric for values of all its tags since 1 day ago:
 ```python
 results = c.query(metric='metric_name',aggr='sum',tags={'tagn':'*'},start='1d-ago')
 ```
+
+#### How to use (Deprecated, will be revised soon)
+
+```python
+>>> from otsdb_client import Connection
+>>> c = Connection(server='localhost', port=4242)
+>>> c.put(metric='test_put',timestamps=[int(mktime(datetime.now().timetuple()))],values=[2000.00],tags={'tagk':'tagv'})
+
+>>> c.query(metric='test_put',aggr='sum',tags={'test':'*'},start='1h-ago')
+{'results': [{'metric': u'test_put', 'values': [2000.0], 'ts': [datetime.datetime(2016, 2, 4, 0, 28, 19)], 'tags': {u'test': u'client', u'type': u'telnet'}}]}
+>>> c.query(metric='test_put',aggr='sum',tags={'test':'*'},start='1h-ago',union=True)
+{'results': {'values': [2000.0], 'ts': [datetime.datetime(2016, 2, 4, 0, 28, 19)]}}
+```
+
+
 
 ## Maintainers
 

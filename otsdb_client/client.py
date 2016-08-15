@@ -40,7 +40,7 @@ class Connection(object):
         ping(server, port)
         self.url = 'http://%s:%d' % (server, port)
         self.headers = {'content-type': "application/json"}
-        self.aggregators = self.aggregators()
+        self.aggregators = self.get_aggregators()
         self.ids = {"filter": {}, "metric": {}}
 
     def get_endpoint(self, key=""):
@@ -94,7 +94,7 @@ class Connection(object):
         resp = self._get(endpoint="stats")
         return self.process_response(resp)
 
-    def aggregators(self):
+    def get_aggregators(self):
         """Used to get the list of default aggregation functions. """
         resp = self._get(endpoint="aggr")
         return self.process_response(resp)
