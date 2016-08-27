@@ -58,18 +58,18 @@ class Connection(object):
             "Please provide a valid endpoint."
         return endpoint
 
-    def _get(self, endpoint="", params=dict(), mapsize=5):
+    def _get(self, endpoint="", params=dict()):
         r = gr.get(self.url + self.get_endpoint(endpoint),
                    params=params)
-        gr.map([r],size=mapsize)
+        gr.map([r])
         return r.response
 
-    def _post(self, endpoint="", data=dict(), mapsize=5):
+    def _post(self, endpoint="", data=dict()):
         assert isinstance(data, dict), 'Field <data> must be a dict.'
 
         r = gr.post(self.url + self.get_endpoint(endpoint),
             data=self.dumps(data), headers=self.headers)
-        gr.map([r],size=mapsize)
+        gr.map([r])
 
         return r.response
 
@@ -122,7 +122,7 @@ class Connection(object):
         return self.process_response(resp)
 
     def put(self, metric=None, timestamps=[], values=[], tags=dict(),
-        details=True, verbose=True, ptcl=20, att=5, mapsize=5):
+        details=True, verbose=True, ptcl=20, att=5):
         """ Put time serie points into OpenTSDB over HTTP.
 
         Parameters
@@ -197,7 +197,7 @@ class Connection(object):
         attempts = 0
         fails = 1
         while attempts < att and fails > 0:
-            gr.map(pts,size=mapsize)
+            gr.map(pts)
 
             if verbose:
                 print('Attempt %d: Request submitted with HTTP status codes %s' \
