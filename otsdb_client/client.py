@@ -21,6 +21,9 @@ import socket
 
 from json import dumps as tdumps, loads
 from logging import info
+from logging import getLogger
+getLogger("requests").setLevel(logging.CRITICAL))
+getLogger("grequests").setLevel(logging.CRITICAL))
 
 def ping(host, port):
     try:
@@ -31,6 +34,9 @@ def ping(host, port):
         if err.errno == socket.errno.ECONNREFUSED:
             raise Exception('Can\'t connect to OpenTSDB Server')
         raise Exception('Fail to test OpenTSDB connection status')
+
+def exception_handler(request, exception):
+    pass # suppress errors on grequests.map
 
 class Connection(object):
     def __init__(self, server='localhost', port=4242):
@@ -61,7 +67,7 @@ class Connection(object):
     def _get(self, endpoint="", params=dict()):
         r = gr.get(self.url + self.get_endpoint(endpoint),
                    params=params)
-        gr.map([r])
+        gr.map([r],exception_handler=exception_handler)
         return r.response
 
     def _post(self, endpoint="", data=dict()):
@@ -69,7 +75,7 @@ class Connection(object):
 
         r = gr.post(self.url + self.get_endpoint(endpoint),
             data=self.dumps(data), headers=self.headers)
-        gr.map([r])
+        gr.map([r],exception_handler=exception_handler)
 
         return r.response
 
@@ -197,7 +203,7 @@ class Connection(object):
         attempts = 0
         fails = 1
         while attempts < att and fails > 0:
-            gr.map(pts)
+            gr.map(pts,exception_handler=exception_handler)
 
             if verbose:
                 print('Attempt %d: Request submitted with HTTP status codes %s' \
