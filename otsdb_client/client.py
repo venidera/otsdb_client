@@ -21,9 +21,9 @@ import socket
 
 from json import dumps as tdumps, loads
 from logging import info
-from logging import getLogger
-getLogger("requests").setLevel(logging.CRITICAL)
-getLogger("grequests").setLevel(logging.CRITICAL)
+from logging import getLogger,CRITICAL
+getLogger("requests").setLevel(CRITICAL)
+getLogger("grequests").setLevel(CRITICAL)
 
 def ping(host, port):
     try:
